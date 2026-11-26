@@ -254,7 +254,7 @@ async function telaInicio(){
  const m=motorista();if(!m){tela="dados";return render()}
  const abertas=LS.get("kp-abertas",[]),pend=await atualizarRede(),rasc=await F.lerRascunho().catch(()=>null);
  if(tela!=="inicio")return;
- let h='<div class="capa" style="min-height:190px;padding-bottom:14px"><img src="logo.jpg" alt="KP Transportes" style="width:96px;height:96px"></div><div class="card heroi"><div class="avatar">'+esc(iniciais(m.nome))+'</div><div style="flex:1"><span class="mut">Motorista</span><div style="font-size:22px;font-weight:800;line-height:1.2">'+esc(m.nome)+'</div><span class="mut">CPF '+esc(cpfFmt(m.cpf))+'</span></div></div><p style="margin:-4px 0 0;text-align:right"><button class="link" data-a="trocar">Não é você? Trocar</button></p>';
+ let h='<div class="capa" style="min-height:190px;padding-bottom:14px"><img src="logo.jpg" alt="KP Transportes" style="width:96px;height:96px"></div><div class="card heroi"><div class="avatar">'+esc(iniciais(m.nome))+'</div><div style="flex:1"><span class="mut">Motorista</span><div style="font-size:22px;font-weight:800;line-height:1.2">'+esc(m.nome)+'</div></div></div><p style="margin:-4px 0 0;text-align:right"><button class="link" data-a="trocar">Não é você? Trocar</button></p>';
  if(!C.API_URL)h+='<div class="status erro">App em configuração. Os check-lists ficam guardados no celular até o administrativo terminar a configuração.</div>';
  if(rasc)h+='<div class="card"><b>Você tem um check-list começado</b><p class="mut">'+(rasc.tipo==="saida"?"Saída":"Retorno")+(rasc.placa?" · "+esc(rasc.placa):"")+'</p><button class="grande" data-a="continuar">Continuar de onde parou</button><button class="link" data-a="descartar">Descartar e começar outro</button></div>';
  abertas.forEach(a=>{h+='<button class="retorno" data-a="retorno" data-id="'+esc(a.id)+'">'+IC.caminhao+'<span style="flex:1"><span>Check-list em aberto · completar retorno</span><b>'+esc(a.placa)+'</b><span>Saiu em '+esc(br(a.data))+' às '+esc(a.hora)+'</span></span></button>'});
@@ -265,13 +265,13 @@ async function telaInicio(){
  $("#app").innerHTML=h;
 }
 function telaDados(){
- const m=motorista()||{nome:"",cpf:""};
- $("#app").innerHTML='<h1>Seus dados</h1><p class="mut">Só precisa preencher uma vez. O celular guarda.</p><label for="d-nome">Nome completo</label><input id="d-nome" autocomplete="name" value="'+esc(m.nome)+'"><label for="d-cpf">CPF</label><input id="d-cpf" inputmode="numeric" placeholder="000.000.000-00" value="'+esc(cpfFmt(m.cpf))+'">';
+ const m=motorista()||{nome:""};
+ $("#app").innerHTML='<h1>Seu nome</h1><p class="mut">Só precisa preencher uma vez. O celular guarda.</p><label for="d-nome">Nome</label><input id="d-nome" autocomplete="given-name" autocapitalize="words" value="'+esc(m.nome)+'" placeholder="Ex.: João"><p class="mut" style="margin-top:8px">Pode ser só o primeiro nome. Se tiver outro motorista com o mesmo nome, coloque também o sobrenome ou o apelido.</p>';
  $("#rod").innerHTML='<div class="rodape"><div>'+(motorista()?'<button data-a="inicio">Cancelar</button>':'')+'<button class="prox" data-a="salvar-dados">Continuar</button></div></div>';
 }
 function novoRegistro(tipo,base){
  const m=motorista();
- const r={tipo,id:base?base.id:uid(),criadoEm:new Date().toISOString(),data:hoje(),hora:hora(),motorista:{nome:m.nome,cpf:m.cpf},fotos:{},avarias:[],obs:""};
+ const r={tipo,id:base?base.id:uid(),criadoEm:new Date().toISOString(),data:hoje(),hora:hora(),motorista:{nome:m.nome},fotos:{},avarias:[],obs:""};
  if(tipo==="saida")Object.assign(r,{placa:"",km:"",ajudante:"",semAjudante:false,transporte:"",lacre:"",clientes:"",peso:"",nok:{},frio:{usa:null,neg:null,t:"",exigMin:null,exigMax:null,aparelho:""}});
  else Object.assign(r,{placa:base?base.placa:"",kmSaida:base?base.km:"",outroCelular:!base,km:"",clientesRet:"",pesoRet:"",divergencia:{houve:null,desc:""},frio:{usa:base&&base.frio?"sim":null,neg:null,t:"",aparelho:"",exigMin:base?base.exigMin:null,exigMax:base?base.exigMax:null},assinatura:""});
  if(tipo==="saida"&&navigator.geolocation)navigator.geolocation.getCurrentPosition(p=>{if(R&&R.id===r.id){R.gps=[+p.coords.latitude.toFixed(5),+p.coords.longitude.toFixed(5)];salvar()}},()=>{},{timeout:15000,maximumAge:120000,enableHighAccuracy:false});
@@ -405,10 +405,9 @@ document.addEventListener("click",async e=>{
  const im=e.target.closest(".galeria img");if(im&&im.src.startsWith("data:")){const zz=$("#zoom");zz.querySelector("img").src=im.src;zz.classList.add("on");return}
  const b=e.target.closest("[data-a]");if(!b)return;const a=b.dataset.a;
  switch(a){
-  case"salvar-dados":{const n=$("#d-nome").value.trim().replace(/\s+/g," "),c=soDig($("#d-cpf").value);
-   if(n.split(" ").length<2){toast("Escreva o nome completo");$("#d-nome").classList.add("erro");return}
-   if(!cpfOk(c)){toast("CPF inválido. Confira os números.");$("#d-cpf").classList.add("erro");return}
-   LS.set("kp-mot",{nome:n,cpf:c});tela="inicio";return render()}
+  case"salvar-dados":{const n=$("#d-nome").value.trim().replace(/\s+/g," ");
+   if(n.length<2){toast("Escreva seu nome");$("#d-nome").classList.add("erro");return}
+   LS.set("kp-mot",{nome:n});tela="inicio";return render()}
   case"trocar":tela="dados";return render();
   case"inicio":tela="inicio";R=null;return render();
   case"nova":R=novoRegistro("saida");tela="saida";passo=0;salvar(true);return render();
@@ -452,7 +451,7 @@ function telaAdm(){
  document.querySelector("main").classList.add("largo");
  if(!adm)adm=LS.get("kp-adm",null);
  if(!adm){
-  $("#app").innerHTML='<div style="max-width:460px;margin:0 auto"><div class="card" style="text-align:center"><img src="logo.jpg" alt="KP Transportes" style="width:110px;height:110px;border-radius:50%;box-shadow:0 0 0 3px var(--azul),0 10px 30px rgba(225,6,0,.4);margin-bottom:8px"><h1>Escritório</h1><p class="mut">Administrativo, Diretoria e Dev. Use o nome e a senha que o Dev cadastrou para você.</p></div><label for="a-nome">Seu nome</label><input id="a-nome" value="'+esc(LS.get("kp-adm-nome",""))+'" autocomplete="username" placeholder="Nome e sobrenome"><label for="a-senha">Senha</label><input id="a-senha" type="password" autocomplete="current-password"><button class="grande" data-x="entrar">Entrar</button><p style="text-align:center"><button class="link" data-x="app">← Voltar ao app do motorista</button></p></div>';
+  $("#app").innerHTML='<div style="max-width:460px;margin:0 auto"><div class="card" style="text-align:center"><img src="logo.jpg" alt="KP Transportes" style="width:110px;height:110px;border-radius:50%;box-shadow:0 0 0 3px var(--azul),0 10px 30px rgba(225,6,0,.4);margin-bottom:8px"><h1>Escritório</h1><p class="mut">Administrativo, Diretoria e Dev. Use o nome e a senha que o Dev cadastrou para você.</p></div><label for="a-nome">Seu nome</label><input id="a-nome" value="'+esc(LS.get("kp-adm-nome",""))+'" autocomplete="username" placeholder="Seu nome"><label for="a-senha">Senha</label><input id="a-senha" type="password" autocomplete="current-password"><button class="grande" data-x="entrar">Entrar</button><p style="text-align:center"><button class="link" data-x="app">← Voltar ao app do motorista</button></p></div>';
   return;
  }
  const abas=[["lista","Check-lists"]];if(pode.dev())abas.push(["usuarios","Usuários"],["registro","Registro de acessos"]);abas.push(["senha","Minha senha"]);
@@ -486,7 +485,7 @@ function admLista(){
  clearInterval(admTimer);admTimer=setInterval(()=>{if(tela==="adm"&&admAba==="lista"&&!document.hidden&&document.activeElement.id!=="fa-q")admCarregar(true)},90000);
  const L=admDados.linhas||[],cnt=s=>L.filter(l=>l.situacao===s).length,prob=L.filter(temProblema).length;
  let h='<div class="kpis"><div class="kpi k-rota"><b>'+cnt("Em rota")+'</b><span>Em rota agora</span></div><div class="kpi k-aguard"><b>'+cnt("Aguardando validação")+'</b><span>Aguardando validação</span></div><div class="kpi'+(prob?" k-vm":"")+'"><b>'+prob+'</b><span>Com problema (NOK, avaria, frio, divergência)</span></div><div class="kpi"><b>'+L.length+'</b><span>Check-lists no período</span></div></div>';
- h+='<div class="filtros"><input id="fa-q" placeholder="Buscar placa, motorista, CPF, ajudante" value="'+esc(filtroAdm.q)+'"><select id="fa-st"><option value="">Todas as situações</option><option>Em rota</option><option>Aguardando validação</option><option>Validado</option><option>Reprovado</option><option value="prob">Com problema</option><option>Retorno sem saída</option></select><input type="date" id="fa-de" value="'+esc(filtroAdm.de||admDados._de)+'" aria-label="De"><input type="date" id="fa-ate" value="'+esc(filtroAdm.ate)+'" aria-label="Até"></div>';
+ h+='<div class="filtros"><input id="fa-q" placeholder="Buscar placa, motorista, ajudante" value="'+esc(filtroAdm.q)+'"><select id="fa-st"><option value="">Todas as situações</option><option>Em rota</option><option>Aguardando validação</option><option>Validado</option><option>Reprovado</option><option value="prob">Com problema</option><option>Retorno sem saída</option></select><input type="date" id="fa-de" value="'+esc(filtroAdm.de||admDados._de)+'" aria-label="De"><input type="date" id="fa-ate" value="'+esc(filtroAdm.ate)+'" aria-label="Até"></div>';
  h+='<div style="display:flex;gap:14px;flex-wrap:wrap;align-items:center;margin:8px 0"><button data-x="atualizar" style="min-height:44px">Atualizar</button>'+(admDados.planilha&&/^https:\/\/docs\.google\.com\//.test(admDados.planilha)?'<a class="link" href="'+esc(admDados.planilha)+'" target="_blank" rel="noopener">Abrir a planilha no Google</a>':'')+'</div><div id="lista-adm" class="grade"></div>';
  corpo().innerHTML=h;$("#fa-st").value=filtroAdm.st;admListaItens();
 }
@@ -505,7 +504,7 @@ function admDetalhe(){
  const l=(admDados&&admDados.linhas||[]).find(x=>x.id===admSel);if(!l){tela="adm";return render()}
  const s=l.saida||{},r=l.retorno||null,nk=Object.entries(s.itensNok||{}),v=l.validacao||{};
  let h='<button class="link" data-x="voltar">← Voltar à lista</button><div class="topo"><h1 style="margin:0;letter-spacing:.05em">'+esc(l.placa)+'</h1><span class="tag '+situ(l)+'">'+esc(l.situacao)+'</span></div><div class="det">';
- h+='<div class="card"><h2 style="margin-top:0">Saída · '+esc(br(l.dataSaida))+' '+esc(l.horaSaida||"")+'</h2><dl><dt>Motorista</dt><dd>'+esc(l.motorista)+'</dd><dt>CPF</dt><dd>'+esc(cpfFmt(l.cpf))+'</dd><dt>Ajudante</dt><dd>'+(esc(l.ajudante)||"Sem ajudante")+'</dd><dt>Km saída</dt><dd>'+esc(s.km??"")+'</dd>'+(s.clientes!=null?'<dt>Entregas</dt><dd>'+esc(s.clientes)+'</dd>':'')+(s.peso?'<dt>Peso</dt><dd>'+esc(s.peso)+' kg</dd>':'')+(s.transporte?'<dt>Transporte</dt><dd>'+esc(s.transporte)+'</dd>':'')+(s.lacre?'<dt>Lacre</dt><dd>'+esc(s.lacre)+'</dd>':'')+
+ h+='<div class="card"><h2 style="margin-top:0">Saída · '+esc(br(l.dataSaida))+' '+esc(l.horaSaida||"")+'</h2><dl><dt>Motorista</dt><dd>'+esc(l.motorista)+'</dd>'+(l.cpf?'<dt>CPF</dt><dd>'+esc(cpfFmt(l.cpf))+'</dd>':'')+'<dt>Ajudante</dt><dd>'+(esc(l.ajudante)||"Sem ajudante")+'</dd><dt>Km saída</dt><dd>'+esc(s.km??"")+'</dd>'+(s.clientes!=null?'<dt>Entregas</dt><dd>'+esc(s.clientes)+'</dd>':'')+(s.peso?'<dt>Peso</dt><dd>'+esc(s.peso)+' kg</dd>':'')+(s.transporte?'<dt>Transporte</dt><dd>'+esc(s.transporte)+'</dd>':'')+(s.lacre?'<dt>Lacre</dt><dd>'+esc(s.lacre)+'</dd>':'')+
  '<dt>Itens</dt><dd style="color:'+(nk.length?"var(--verm)":"var(--verde)")+'">'+(nk.length?nk.map(([k,x])=>esc(k)+": "+esc(x)).join("<br>"):"Todos OK")+'</dd><dt>Frio</dt><dd style="color:'+(s.frio&&s.frio.aparelho==="nok"?"var(--verm)":"inherit")+'">'+esc(frioTxt(s.frio))+'</dd>'+(s.obs?'<dt>Obs.</dt><dd>'+esc(s.obs)+'</dd>':'')+(s.gps?'<dt>Local</dt><dd><a href="https://www.google.com/maps?q='+(+s.gps[0])+','+(+s.gps[1])+'" target="_blank" rel="noopener">Ver no mapa</a></dd>':'')+'</dl>'+blocoFotos(s.fotosIds,s.avariasIds)+'</div>';
  if(r){const dv=r.divergencia||{};h+='<div class="card"><h2 style="margin-top:0">Retorno · '+esc(br(l.dataRetorno))+' '+esc(l.horaRetorno||"")+'</h2><dl><dt>Km chegada</dt><dd>'+esc(r.km??"")+'</dd><dt>Km rodado</dt><dd>'+esc(l.kmRodado===""||l.kmRodado==null?"—":l.kmRodado+" km")+'</dd><dt>Entregas que voltaram</dt><dd>'+esc(r.clientesRet??"—")+(s.clientes!=null?" de "+esc(s.clientes):"")+'</dd><dt>Peso que voltou</dt><dd>'+esc(r.pesoRet||"0")+' kg</dd><dt>Divergência</dt><dd style="color:'+(dv.houve?"var(--verm)":"inherit")+'">'+(dv.houve?esc(dv.desc||"Sim"):"Não")+'</dd>'+(r.frio?'<dt>Frio</dt><dd style="color:'+(r.frio.aparelho==="nok"?"var(--verm)":"inherit")+'">'+esc(frioTxt(r.frio))+'</dd>':'')+(r.obs?'<dt>Obs.</dt><dd>'+esc(r.obs)+'</dd>':'')+'</dl>'+blocoFotos(r.fotosIds,r.avariasIds,r.assinaturaId)+'</div>'}
  else h+='<div class="card"><div class="status pend" style="margin:0">'+IC.relogio+'<span>Caminhão ainda não voltou: o retorno não foi registrado.</span></div></div>';
@@ -542,7 +541,7 @@ async function admApagar(b){
 async function admUsuarios(){
  if(!admUsu){corpo().innerHTML='<p class="mut">Carregando usuários…</p>';try{admUsu=(await api("usuarios")).usuarios}catch(e){corpo().innerHTML='<div class="status erro">'+esc(e.message)+'</div>';return}if(admAba!=="usuarios"||!corpo())return}
  const ord={dev:0,adm:1,dir:2},L=[...admUsu].sort((a,b)=>(b.ativo-a.ativo)||(ord[a.perfil]-ord[b.perfil])||a.nome.localeCompare(b.nome));
- let h='<div class="det"><div class="card"><h2 style="margin-top:0">Cadastrar pessoa</h2><p class="mut">A pessoa entra com este nome e esta senha, e pode trocar a senha depois em "Minha senha".</p><label for="u-nome">Nome e sobrenome</label><input id="u-nome" placeholder="Ex.: Ana Souza"><label for="u-perfil">Perfil</label><select id="u-perfil"><option value="adm">Administrativo (vê, valida e apaga)</option><option value="dir">Diretoria (vê tudo)</option><option value="dev">Dev (tudo, inclusive usuários)</option></select><label for="u-senha">Senha inicial</label><input id="u-senha" placeholder="Pelo menos 6 caracteres" autocomplete="off"><button class="grande" data-x="criar-usu">Cadastrar</button></div>';
+ let h='<div class="det"><div class="card"><h2 style="margin-top:0">Cadastrar pessoa</h2><p class="mut">A pessoa entra com este nome e esta senha, e pode trocar a senha depois em "Minha senha".</p><label for="u-nome">Nome</label><input id="u-nome" placeholder="Ex.: Flavia"><p class="mut" style="margin-top:6px">Pode ser só o primeiro nome. É com ele que a pessoa vai entrar.</p><label for="u-perfil">Perfil</label><select id="u-perfil"><option value="adm">Administrativo (vê, valida e apaga)</option><option value="dir">Diretoria (vê tudo)</option><option value="dev">Dev (tudo, inclusive usuários)</option></select><label for="u-senha">Senha inicial</label><input id="u-senha" placeholder="Pelo menos 6 caracteres" autocomplete="off"><button class="grande" data-x="criar-usu">Cadastrar</button></div>';
  h+='<div class="card"><h2 style="margin-top:0">Pessoas cadastradas ('+L.filter(u=>u.ativo).length+' ativas)</h2>'+L.map(u=>'<div class="usu" style="box-shadow:none;border:1px solid var(--linha)'+(u.ativo?'':';opacity:.6')+'"><div class="nm"><b>'+esc(u.nome)+'</b>'+(u.eu?' <small class="mut">(você)</small>':'')+'<br><span class="tag t-'+(u.ativo?esc(u.perfil):"off")+'">'+(u.ativo?PAPEL[u.perfil]:"Desativado")+'</span> <small class="mut">'+(u.ultimo?"último acesso "+esc(u.ultimo):"nunca entrou")+'</small></div>'+(u.eu?'':'<div class="acoes"><select data-perfil="'+esc(u.id)+'" aria-label="Perfil">'+Object.entries(PAPEL).map(([k,n])=>'<option value="'+k+'"'+(u.perfil===k?" selected":"")+'>'+n+'</option>').join('')+'</select><button data-x="senha-usu" data-id="'+esc(u.id)+'">Nova senha</button><button class="'+(u.ativo?"vermelho":"verde")+'" data-x="ativo-usu" data-id="'+esc(u.id)+'" data-v="'+(u.ativo?0:1)+'">'+(u.ativo?"Desativar":"Reativar")+'</button></div>')+'<div id="ns-'+esc(u.id)+'" style="flex-basis:100%"></div></div>').join('')+'</div></div>';
  corpo().innerHTML=h;
 }
@@ -574,7 +573,7 @@ document.addEventListener("click",async e=>{
   case"pedir-apagar":confApagar=true;admDetalhe();{const i=$("#adm-mot");if(i)i.focus()}return;
   case"nao-apagar":confApagar=false;return admDetalhe();
   case"apagar":return admApagar(b);
-  case"criar-usu":{const nome=$("#u-nome").value.trim(),senha=$("#u-senha").value;if(nome.split(/\s+/).length<2){toast("Escreva nome e sobrenome");return}if(senha.length<6){toast("A senha precisa ter pelo menos 6 caracteres");return}return admSalvarUsu({nome,perfil:$("#u-perfil").value,senha},b)}
+  case"criar-usu":{const nome=$("#u-nome").value.trim(),senha=$("#u-senha").value;if(nome.length<2){toast("Escreva o nome");return}if(senha.length<6){toast("A senha precisa ter pelo menos 6 caracteres");return}return admSalvarUsu({nome,perfil:$("#u-perfil").value,senha},b)}
   case"ativo-usu":return admSalvarUsu({id:b.dataset.id,ativo:b.dataset.v==="1"},b);
   case"senha-usu":{const d=$("#ns-"+CSS.escape(b.dataset.id));d.innerHTML='<div style="display:flex;gap:8px;margin-top:8px"><input id="nsv-'+esc(b.dataset.id)+'" placeholder="Nova senha (mín. 6)" style="min-height:48px;font-size:16px"><button class="azul" data-x="salvar-ns" data-id="'+esc(b.dataset.id)+'">Salvar</button></div>';$("#nsv-"+CSS.escape(b.dataset.id)).focus();return}
   case"salvar-ns":{const v=$("#nsv-"+CSS.escape(b.dataset.id)).value;if(v.length<6){toast("A senha precisa ter pelo menos 6 caracteres");return}return admSalvarUsu({id:b.dataset.id,senha:v},b)}
@@ -583,6 +582,7 @@ document.addEventListener("click",async e=>{
 });
 
 /* ================= início ================= */
+{const mm=LS.get("kp-mot",null);if(mm&&mm.cpf){LS.set("kp-mot",{nome:mm.nome})}}
 if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js").catch(()=>{});
 if(location.hash==="#admin"||LS.get("kp-modo","")==="escritorio"||LS.get("kp-adm",null))tela="adm";
 else if(!LS.get("kp-modo","")&&!motorista())tela="entrada";
