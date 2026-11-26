@@ -31,8 +31,10 @@ Celular (app)  --guarda no aparelho-->  fila offline  --quando tem internet-->  
 > Se mudar o `Code.gs` depois, use **Implantar → Gerenciar implantações → editar → Nova versão** para manter o mesmo URL.
 
 ### 2. Publicar o app
-O app é publicado pelo GitHub Pages: **Settings → Pages → Branch `main` / root → Save**.
-Endereço: `https://patricklivia.github.io/kp-checklist/`
+O app é publicado pelo GitHub Pages a partir do branch **`gh-pages`** (já ativo).
+Endereço para os motoristas: **https://patricklivia.github.io/KP-checkList/**
+
+Toda alteração precisa ir para `main` e `gh-pages`.
 
 ## No celular do motorista (Android)
 1. Abra o link no **Chrome**.
