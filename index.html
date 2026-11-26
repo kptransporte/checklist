@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0a5cff">
+<title>KP CHECKLIST</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+/* Feito para dedo grande, sol forte e pouca paciência: letra grande, um assunto por tela, botão largo embaixo. */
+:root{--azul:#0a5cff;--verm:#e6261f;--verde:#00a05a;--amar:#ffb400;--fundo:#f2f4f7;--card:#fff;--tinta:#111418;--mut:#5b6370;--linha:#d9dee5;--vermc:#fdecea;--verdec:#e3f6ec}
+*{box-sizing:border-box;min-width:0}
+html,body{margin:0;background:var(--fundo);color:var(--tinta);font:18px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-tap-highlight-color:transparent}
+header{background:var(--azul);color:#fff;padding:calc(10px + env(safe-area-inset-top)) 16px 10px;position:sticky;top:0;z-index:5;display:flex;justify-content:space-between;align-items:center;gap:8px}
+header b{font-size:19px;letter-spacing:.02em}
+#rede{font-size:13px;font-weight:700;background:rgba(255,255,255,.2);border-radius:99px;padding:5px 10px;white-space:nowrap}
+#rede.off{background:var(--amar);color:#111}
+main{max-width:640px;margin:0 auto;padding:16px 16px calc(120px + env(safe-area-inset-bottom))}
+h1{font-size:26px;line-height:1.15;margin:4px 0 6px}
+h2{font-size:20px;margin:18px 0 8px}
+p{margin:6px 0}
+.mut{color:var(--mut);font-size:15px}
+.passo{font-size:14px;font-weight:700;color:var(--azul);text-transform:none;margin-top:4px}
+.barra{height:6px;background:var(--linha);border-radius:9px;overflow:hidden;margin:6px 0 14px}.barra i{display:block;height:100%;background:var(--azul)}
+label{display:block;font-weight:700;font-size:16px;margin:14px 0 4px}
+label small{font-weight:400;color:var(--mut)}
+input,textarea,select{width:100%;font:inherit;font-size:20px;padding:14px;border:2px solid var(--linha);border-radius:12px;background:#fff;color:var(--tinta);min-height:56px}
+textarea{min-height:90px;font-size:18px}
+input:focus,textarea:focus{outline:none;border-color:var(--azul);box-shadow:0 0 0 3px rgba(10,92,255,.2)}
+input.placa{text-transform:uppercase;font-weight:800;letter-spacing:.08em;font-size:26px;text-align:center}
+input.erro{border-color:var(--verm);background:var(--vermc)}
+button{font:inherit;font-weight:800;border:0;border-radius:14px;min-height:56px;padding:12px 18px;cursor:pointer;background:var(--linha);color:var(--tinta)}
+button:disabled{opacity:.5}
+.grande{width:100%;font-size:21px;min-height:66px;background:var(--azul);color:#fff;margin-top:12px}
+.verde{background:var(--verde);color:#fff}.azul{background:var(--azul);color:#fff}.vermelho{background:var(--verm);color:#fff}.amarelo{background:var(--amar);color:#111}
+.link{background:none;color:var(--azul);min-height:44px;padding:8px 0;font-weight:700}
+.rodape{position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:1px solid var(--linha);padding:10px 16px calc(10px + env(safe-area-inset-bottom));display:flex;gap:10px;z-index:4}
+.rodape>div{max-width:640px;margin:0 auto;display:flex;gap:10px;width:100%}
+.rodape button{flex:1;min-height:60px;font-size:19px}
+.rodape .prox{flex:2;background:var(--azul);color:#fff}
+.card{background:var(--card);border:1px solid var(--linha);border-radius:16px;padding:16px;margin:12px 0}
+.status{border-radius:14px;padding:14px 16px;margin:12px 0;font-weight:700}
+.status.ok{background:var(--verdec);color:#05663a}.status.pend{background:#fff4d6;color:#6b4b00}.status.erro{background:var(--vermc);color:#a3110b}
+.retorno{display:block;width:100%;text-align:left;background:var(--amar);color:#111;border-radius:16px;padding:16px;margin:10px 0;min-height:0}
+.retorno b{display:block;font-size:24px;letter-spacing:.04em}
+.fotos{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.foto{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;aspect-ratio:4/3;border:3px dashed var(--azul);border-radius:14px;background:#fff;color:var(--azul);font-weight:800;font-size:16px;text-align:center;padding:8px;cursor:pointer;overflow:hidden;margin:0}
+.foto input{position:absolute;inset:0;opacity:0;width:100%;height:100%;min-height:0;cursor:pointer}
+.foto.tem{border:3px solid var(--verde);padding:0;color:#fff}
+.foto.tem img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.foto.tem span{position:absolute;left:0;right:0;bottom:0;background:rgba(0,160,90,.92);padding:4px;font-size:14px}
+.foto.falta{border-color:var(--verm);color:var(--verm)}
+.foto svg{width:38px;height:38px}
+.av{display:flex;gap:10px;align-items:center;margin:10px 0}
+.av img{width:84px;height:84px;object-fit:cover;border-radius:10px;flex:none}
+.av input{font-size:17px;min-height:50px;padding:10px}
+.av button{flex:none;min-height:50px;padding:6px 12px}
+.item{display:flex;align-items:center;gap:12px;width:100%;text-align:left;background:#fff;border:2px solid var(--linha);border-radius:14px;padding:12px 14px;margin:8px 0;min-height:60px;font-weight:700;font-size:18px;color:var(--tinta)}
+.item i{flex:none;width:34px;height:34px;border-radius:50%;display:grid;place-items:center;font-style:normal;color:#fff;background:var(--verde);font-size:18px}
+.item.nok{border-color:var(--verm);background:var(--vermc);color:var(--verm)}
+.item.nok i{background:var(--verm)}
+.item em{margin-left:auto;font-style:normal;font-size:13px;color:var(--mut);font-weight:600}
+.nokdesc{margin:-2px 0 12px;border-color:var(--verm)}
+.duo{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.duo button{min-height:72px;font-size:22px;border:3px solid transparent}
+.duo button.on{border-color:var(--tinta)}
+.temp{display:flex;gap:8px}
+.temp button{flex:none;width:76px;font-size:26px}
+.temp input{text-align:center;font-size:26px;font-weight:800}
+.alerta{background:var(--vermc);color:var(--verm);border-radius:12px;padding:12px 14px;font-weight:800;margin-top:10px}
+.bom{background:var(--verdec);color:#05663a;border-radius:12px;padding:12px 14px;font-weight:800;margin-top:10px}
+dl{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;margin:0}dt{color:var(--mut);font-size:15px}dd{margin:0;font-weight:700;overflow-wrap:anywhere}
+canvas{display:block;width:100%;height:170px;background:#fff;border:2px solid var(--linha);border-radius:12px;touch-action:none}
+details{margin-top:14px}summary{font-weight:700;color:var(--azul);min-height:44px;display:flex;align-items:center;cursor:pointer}
+.ok-grande{text-align:center;padding:30px 0}
+.ok-grande .circ{width:110px;height:110px;border-radius:50%;margin:0 auto 14px;display:grid;place-items:center;color:#fff;font-size:60px;font-weight:900}
+.toast{position:fixed;left:50%;bottom:calc(96px + env(safe-area-inset-bottom));transform:translateX(-50%);background:#111;color:#fff;padding:14px 18px;border-radius:14px;font-weight:700;z-index:9;max-width:92vw;opacity:0;transition:opacity .2s;pointer-events:none;text-align:center;font-size:16px}
+.toast.on{opacity:1}
+/* administrativo */
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin:10px 0}
+.kpi{background:#fff;border:1px solid var(--linha);border-radius:14px;padding:12px}
+.kpi b{display:block;font-size:30px;line-height:1.1}.kpi span{font-size:14px;color:var(--mut)}
+.kpi.vm b{color:var(--verm)}
+.filtros{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.filtros input,.filtros select{font-size:16px;min-height:48px;padding:10px}
+.filtros>:first-child{grid-column:1/-1}
+.linhaadm{display:block;width:100%;text-align:left;background:#fff;border:1px solid var(--linha);border-left:6px solid var(--linha);border-radius:14px;padding:12px 14px;margin:8px 0;font-weight:400;min-height:0}
+.linhaadm.v{border-left-color:var(--verm)}
+.linhaadm b{font-size:19px;letter-spacing:.03em}
+.tag{display:inline-block;font-size:13px;font-weight:800;padding:3px 9px;border-radius:99px;white-space:nowrap}
+.t-rota{background:var(--amar)}.t-aguard{background:#9cc0ff}.t-val{background:var(--verde);color:#fff}.t-rep{background:var(--verm);color:#fff}.t-sem{background:var(--linha)}
+.galeria{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px;margin-top:8px}
+.galeria figure{margin:0;background:#fff;border:1px solid var(--linha);border-radius:10px;overflow:hidden}
+.galeria img{display:block;width:100%;aspect-ratio:4/3;object-fit:cover;background:var(--linha);cursor:zoom-in}
+.galeria figcaption{font-size:13px;padding:4px 6px;color:var(--mut)}
+#zoom{position:fixed;inset:0;background:rgba(0,0,0,.92);display:none;align-items:center;justify-content:center;z-index:20}
+#zoom img{max-width:100%;max-height:100%}
+#zoom.on{display:flex}
+@media(min-width:900px){main{max-width:900px}}
+</style>
+</head>
+<body>
+<header><b>KP CHECKLIST</b><span id="rede">…</span></header>
+<main id="app"><p class="mut">Carregando…</p></main>
+<div id="rod"></div>
+<div class="toast" id="toast"></div>
+<div id="zoom" role="dialog"><img alt="Foto ampliada"></div>
+<script src="config.js"></script>
+<script src="sync.js"></script>
+<script>
+{
+const C=self.KP_CONFIG,F=self.KPFila;
+const ITENS=["Luzes do painel","Faróis","Lanterna","Extintor","Setas e pisca-alerta","Triângulo","Chave de roda","Macaco","Estepe","Documento do caminhão","CNH do motorista","Cinto de segurança","Espelhos retrovisores","Limpador de para-brisa","Hodômetro","Rastreador","Marcador de combustível","Água do radiador","Nível de óleo","Fluido de freio","Equipamento de frio"];
+const FOTOS=[["frente","Frente do caminhão"],["traseira","Traseira (portas do baú)"],["esquerda","Lado esquerdo"],["direita","Lado direito"],["carrinho","Carrinho de entrega"]];
+const CAM='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8h4l2-3h6l2 3h4v12H3z"/><circle cx="12" cy="13" r="4"/></svg>';
+let tela="inicio",passo=0,R=null,instalar=null,ultimoEnvio=null,adm=null,admDados=null,admSel=null,fotoCache={};
+const $=s=>document.querySelector(s);
+const esc=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const p2=n=>String(n).padStart(2,"0");
+const hoje=()=>{const d=new Date();return d.getFullYear()+"-"+p2(d.getMonth()+1)+"-"+p2(d.getDate())};
+const hora=()=>{const d=new Date();return p2(d.getHours())+":"+p2(d.getMinutes())};
+const br=s=>s?String(s).split("-").reverse().join("/"):"";
+const LS={get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+const uid=()=>(crypto.randomUUID?crypto.randomUUID():Date.now().toString(36)+Math.random().toString(36).slice(2)).replace(/-/g,"").slice(0,20);
+const normPlaca=p=>String(p||"").toUpperCase().replace(/[^A-Z0-9]/g,"");
+const num=v=>{const s=String(v??"").trim().replace(",",".");if(!s)return null;const n=parseFloat(s);return isNaN(n)?null:n};
+const soDig=s=>String(s||"").replace(/\D/g,"");
+function cpfOk(c){c=soDig(c);if(c.length!==11||/^(\d)\1+$/.test(c))return false;for(const t of[9,10]){let s=0;for(let i=0;i<t;i++)s+=+c[i]*(t+1-i);if(((s*10)%11)%10!==+c[t])return false}return true}
+const cpfFmt=c=>{c=soDig(c).slice(0,11);return c.replace(/^(\d{3})(\d)/,"$1.$2").replace(/^(\d{3})\.(\d{3})(\d)/,"$1.$2.$3").replace(/\.(\d{3})(\d)/,".$1-$2")};
+function toast(t){const e=$("#toast");e.textContent=t;e.classList.add("on");clearTimeout(toast.t);toast.t=setTimeout(()=>e.classList.remove("on"),3500)}
+const temp=(v,neg)=>{const n=num(v);return n==null||neg==null?null:(neg?-Math.abs(n):Math.abs(n))};
+const fora=(t,f)=>{const mi=f.exigMin,ma=f.exigMax;return t!=null&&((mi!=null&&t<mi)||(ma!=null&&t>ma))};
+let salvarT;function salvar(ja){clearTimeout(salvarT);const f=()=>{if(R&&R.tipo)return F.salvarRascunho(R).catch(()=>{})};if(ja)return f();salvarT=setTimeout(f,300)}
+addEventListener("pagehide",()=>salvar(true));document.addEventListener("visibilitychange",()=>{if(document.hidden)salvar(true)});
+
+/* ================= rede e fila ================= */
+async function atualizarRede(){
+ const pend=(await F.lista().catch(()=>[])).length;
+ const e=$("#rede");const on=navigator.onLine;
+ e.className=on?"":"off";e.textContent=(on?"Online":"Sem internet")+(pend?" · "+pend+" na fila":"");
+ return pend;
+}
+async function enviarFila(manual){
+ if(!C.API_URL){if(manual)toast("App ainda não configurado. Avise o administrativo.");return}
+ const r=await F.enviarTudo();ultimoEnvio=r;await atualizarRede();
+ if(manual){toast(r.pendentes?(r.erro==="rede"?"Sem internet. Vai enviar sozinho quando o sinal voltar.":"Não foi possível enviar ("+r.erro+"). Tente de novo."):"Tudo enviado!")}
+ if(r.enviados&&tela==="inicio")render();
+ if(r.enviados&&tela==="fim"){render()}
+}
+function pedirSyncFundo(){if(navigator.serviceWorker&&navigator.serviceWorker.ready)navigator.serviceWorker.ready.then(sw=>sw.sync&&sw.sync.register("kp-enviar")).catch(()=>{})}
+addEventListener("online",()=>{atualizarRede();enviarFila()});
+addEventListener("offline",atualizarRede);
+document.addEventListener("visibilitychange",()=>{if(!document.hidden)enviarFila()});
+setInterval(()=>{if(navigator.onLine)enviarFila()},60000);
+addEventListener("beforeinstallprompt",e=>{e.preventDefault();instalar=e;if(tela==="inicio")render()});
+
+/* ================= fotos ================= */
+async function processarFoto(file,legenda){
+ let fonte;
+ try{fonte=await createImageBitmap(file,{imageOrientation:"from-image"})}catch(e){fonte=await new Promise((ok,no)=>{const i=new Image();i.onload=()=>ok(i);i.onerror=no;i.src=URL.createObjectURL(file)})}
+ const W=fonte.width,H=fonte.height,k=Math.min(1,1280/Math.max(W,H));
+ const c=document.createElement("canvas");c.width=Math.round(W*k);c.height=Math.round(H*k);
+ const x=c.getContext("2d");x.drawImage(fonte,0,0,c.width,c.height);
+ const fs=Math.max(16,Math.round(c.width/34)),bh=Math.round(fs*1.9);
+ x.fillStyle="rgba(0,0,0,.65)";x.fillRect(0,c.height-bh,c.width,bh);
+ x.fillStyle="#fff";x.font="bold "+fs+"px sans-serif";x.textBaseline="middle";
+ const d=new Date();x.fillText(legenda+" · "+p2(d.getDate())+"/"+p2(d.getMonth()+1)+"/"+d.getFullYear()+" "+p2(d.getHours())+":"+p2(d.getMinutes()),Math.round(fs*.6),c.height-bh/2,c.width-fs);
+ fonte.close&&fonte.close();
+ return c.toDataURL("image/jpeg",0.7).split(",")[1];
+}
+const src=b64=>"data:image/jpeg;base64,"+b64;
+
+/* ================= telas do motorista ================= */
+function motorista(){return LS.get("kp-mot",null)}
+function render(){
+ window.scrollTo(0,0);
+ $("#rod").innerHTML="";
+ if(tela==="dados")return telaDados();
+ if(tela==="saida"||tela==="retorno")return telaPasso();
+ if(tela==="fim")return telaFim();
+ if(tela.startsWith("adm"))return telaAdm();
+ return telaInicio();
+}
+async function telaInicio(){
+ const m=motorista();if(!m){tela="dados";return render()}
+ const abertas=LS.get("kp-abertas",[]),pend=await atualizarRede(),rasc=await F.lerRascunho().catch(()=>null);
+ if(tela!=="inicio")return;
+ let h='<p class="mut">Motorista</p><h1>'+esc(m.nome.split(" ")[0])+'</h1><p class="mut">CPF '+esc(cpfFmt(m.cpf))+' · <button class="link" data-a="trocar">Não é você? Trocar</button></p>';
+ if(!C.API_URL)h+='<div class="status erro">App em configuração. Os check-lists ficam guardados no celular até o administrativo terminar a configuração.</div>';
+ if(rasc)h+='<div class="card"><b>Você tem um check-list começado</b><p class="mut">'+(rasc.tipo==="saida"?"Saída":"Retorno")+(rasc.placa?" · "+esc(rasc.placa):"")+'</p><button class="grande" data-a="continuar">Continuar de onde parou</button><button class="link" data-a="descartar">Descartar e começar outro</button></div>';
+ abertas.forEach(a=>{h+='<button class="retorno" data-a="retorno" data-id="'+esc(a.id)+'"><span>Registrar retorno</span><b>'+esc(a.placa)+'</b><span class="mut" style="color:#333">Saiu em '+esc(br(a.data))+' às '+esc(a.hora)+'</span></button>'});
+ h+='<button class="grande" data-a="nova">NOVA SAÍDA</button>';
+ h+=pend?'<div class="status pend">'+pend+' check-list(s) guardado(s) no celular. Vai enviar sozinho quando tiver internet.<br><button class="link" data-a="enviar">Enviar agora</button></div>':'<div class="status ok">Tudo enviado para o escritório.</div>';
+ if(instalar)h+='<button class="grande verde" data-a="instalar">Instalar o app neste celular</button>';
+ h+='<p style="margin-top:22px"><button class="link" data-a="retorno-outro">Retorno de caminhão que saiu em outro celular</button></p><p><button class="link" style="color:var(--mut)" data-a="admin">Área do administrativo</button></p>';
+ $("#app").innerHTML=h;
+}
+function telaDados(){
+ const m=motorista()||{nome:"",cpf:""};
+ $("#app").innerHTML='<h1>Seus dados</h1><p class="mut">Só precisa preencher uma vez. O celular guarda.</p><label for="d-nome">Nome completo</label><input id="d-nome" autocomplete="name" value="'+esc(m.nome)+'"><label for="d-cpf">CPF</label><input id="d-cpf" inputmode="numeric" placeholder="000.000.000-00" value="'+esc(cpfFmt(m.cpf))+'">';
+ $("#rod").innerHTML='<div class="rodape"><div>'+(motorista()?'<button data-a="inicio">Cancelar</button>':'')+'<button class="prox" data-a="salvar-dados">Continuar</button></div></div>';
+}
+function novoRegistro(tipo,base){
+ const m=motorista();
+ const r={tipo,id:base?base.id:uid(),criadoEm:new Date().toISOString(),data:hoje(),hora:hora(),motorista:{nome:m.nome,cpf:m.cpf},fotos:{},avarias:[],obs:""};
+ if(tipo==="saida")Object.assign(r,{placa:"",km:"",ajudante:"",semAjudante:false,ajudante2:"",transporte:"",lacre:"",clientes:"",peso:"",nok:{},frio:{usa:null,neg:null,t:"",exigMin:"",exigMax:"",aparelho:""}});
+ else Object.assign(r,{placa:base?base.placa:"",kmSaida:base?base.km:"",outroCelular:!base,km:"",clientesRet:"",pesoRet:"",frio:{usa:base&&base.frio?"sim":null,neg:null,t:"",aparelho:"",exigMin:base?base.exigMin:null,exigMax:base?base.exigMax:null},assinatura:""});
+ if(tipo==="saida"&&navigator.geolocation)navigator.geolocation.getCurrentPosition(p=>{if(R&&R.id===r.id){R.gps=[+p.coords.latitude.toFixed(5),+p.coords.longitude.toFixed(5)];salvar()}},()=>{},{timeout:15000,maximumAge:120000,enableHighAccuracy:false});
+ return r;
+}
+function passos(){
+ if(R.tipo==="saida")return["caminhao","fotos","itens","frio","conferir"];
+ const p=[];if(R.outroCelular)p.push("placa");p.push("chegada","fotos");if(R.frio.usa==="sim")p.push("frio");p.push("final");return p;
+}
+const TITULO={caminhao:"Caminhão e equipe",fotos:"Fotos",itens:"Itens do caminhão",frio:"Baú refrigerado",conferir:"Conferir e enviar",placa:"Qual caminhão?",chegada:"Chegada",final:"Assinar e enviar"};
+function telaPasso(){
+ const P=passos();if(passo>=P.length)passo=P.length-1;const p=P[passo];
+ let h='<p class="passo">'+(R.tipo==="saida"?"SAÍDA":"RETORNO")+(R.placa?" · "+esc(R.placa):"")+' · passo '+(passo+1)+' de '+P.length+'</p><div class="barra"><i style="width:'+((passo+1)/P.length*100)+'%"></i></div><h1>'+TITULO[p]+'</h1>';
+ h+=({caminhao:pCaminhao,fotos:pFotos,itens:pItens,frio:pFrio,conferir:pConferir,placa:pPlaca,chegada:pChegada,final:pFinal})[p]();
+ $("#app").innerHTML=h;
+ const ult=passo===P.length-1;
+ $("#rod").innerHTML='<div class="rodape"><div><button data-a="voltar">'+(passo?"Voltar":"Sair")+'</button><button class="prox'+(ult?" verde":"")+'" data-a="'+(ult?"enviar-reg":"proximo")+'">'+(ult?"ENVIAR":"Próximo")+'</button></div></div>';
+ if(p==="final")iniciarAssinatura();
+}
+const campo=(rot,k,o={})=>'<label for="c-'+k+'">'+rot+(o.opc?' <small>(se tiver)</small>':'')+'</label><input id="c-'+k+'" data-k="'+k+'" value="'+esc(R[k])+'"'+(o.cls?' class="'+o.cls+'"':'')+(o.im?' inputmode="'+o.im+'"':'')+(o.ph?' placeholder="'+o.ph+'"':'')+(o.ac?' autocapitalize="'+o.ac+'"':'')+' autocomplete="off">';
+function pCaminhao(){
+ return campo("Placa do caminhão","placa",{cls:"placa",ph:"ABC1D23",ac:"characters"})+campo("Km no painel (hodômetro)","km",{im:"numeric",ph:"Ex.: 125400"})+
+ (R.semAjudante?'<label>Ajudante</label><div class="card" style="margin:0">Saindo sem ajudante. <button class="link" data-a="com-ajudante">Tenho ajudante</button></div>':campo("Nome do ajudante","ajudante",{ac:"words"})+'<button class="link" data-a="sem-ajudante">Estou sem ajudante</button>')+
+ '<details'+(R.ajudante2||R.transporte||R.lacre||R.clientes||R.peso?" open":"")+'><summary>Mais dados (opcional)</summary>'+campo("Segundo ajudante","ajudante2",{opc:1,ac:"words"})+campo("Nº do transporte / embarque","transporte",{opc:1})+campo("Nº do lacre","lacre",{opc:1})+campo("Quantidade de clientes","clientes",{opc:1,im:"numeric"})+campo("Peso da carga (kg)","peso",{opc:1,im:"decimal"})+'</details>';
+}
+function pPlaca(){return'<p class="mut">Digite a placa do caminhão que está voltando.</p>'+campo("Placa","placa",{cls:"placa",ph:"ABC1D23",ac:"characters"})+'<p class="mut" style="margin-top:12px">O escritório junta este retorno com a saída dessa placa.</p>'}
+function pChegada(){return(R.kmSaida?'<p class="mut">Km na saída: <b>'+esc(R.kmSaida)+'</b></p>':'')+campo("Km no painel agora","km",{im:"numeric",ph:"Ex.: 125780"})+'<details'+(R.clientesRet||R.pesoRet?" open":"")+'><summary>Voltou mercadoria? (opcional)</summary>'+campo("Clientes que retornaram","clientesRet",{opc:1,im:"numeric"})+campo("Peso retornado (kg)","pesoRet",{opc:1,im:"decimal"})+'</details>'}
+function pFotos(){
+ const leg=R.tipo==="saida"?"Tire uma foto de cada. Toque no quadro para abrir a câmera.":"Tire as mesmas fotos de novo, agora na volta.";
+ let h='<p class="mut">'+leg+'</p><div class="fotos">'+FOTOS.map(([k,n])=>{const b=R.fotos[k];return'<label class="foto'+(b?" tem":(R._falta&&R._falta.includes(k)?" falta":""))+'">'+(b?'<img src="'+src(b)+'" alt=""><span>'+n+' ✓ trocar</span>':CAM+n)+'<input type="file" accept="image/*" capture="environment" data-foto="'+k+'" aria-label="'+n+'"></label>'}).join('')+'</div>';
+ h+='<h2>Avarias '+(R.tipo==="retorno"?"novas ":"")+'<small class="mut">(se tiver)</small></h2><p class="mut">Amassado, risco, peça quebrada? Fotografe de perto e escreva o que é.</p>';
+ h+=R.avarias.map((a,i)=>'<div class="av"><img src="'+src(a.foto)+'" alt=""><input data-av="'+i+'" value="'+esc(a.desc)+'" placeholder="O que é? Onde?"><button data-a="rm-av" data-i="'+i+'">Tirar</button></div>').join('');
+ h+='<label class="foto" style="aspect-ratio:auto;min-height:64px;flex-direction:row">'+CAM+'Foto de avaria<input type="file" accept="image/*" capture="environment" data-foto="avaria"></label>';
+ return h;
+}
+function pItens(){
+ const n=Object.keys(R.nok).length;
+ return'<p class="mut">Está tudo verde = OK. <b>Toque só no que estiver com problema</b> e escreva o que é.</p>'+(n?'<div class="alerta">'+n+' item(ns) com problema</div>':'')+
+ ITENS.map(it=>{const nk=it in R.nok;return'<button class="item'+(nk?" nok":"")+'" data-a="item" data-n="'+esc(it)+'"><i>'+(nk?"!":"✓")+'</i>'+esc(it)+'<em>'+(nk?"COM PROBLEMA":"OK")+'</em></button>'+(nk?'<input class="nokdesc" data-nok="'+esc(it)+'" value="'+esc(R.nok[it])+'" placeholder="Qual o problema?">':'')}).join('');
+}
+function tempHTML(rot,kv,kn){const f=R.frio;return'<label>'+rot+'</label><div class="duo"><button class="'+(f[kn]===true?"on azul":"")+'" data-a="sinal" data-k="'+kn+'" data-v="1">Abaixo de zero (−)</button><button class="'+(f[kn]===false?"on azul":"")+'" data-a="sinal" data-k="'+kn+'" data-v="0">Acima de zero (+)</button></div><div class="temp" style="margin-top:8px"><input inputmode="decimal" data-fr="'+kv+'" value="'+esc(f[kv])+'" placeholder="Número no painel" aria-label="Temperatura"><button disabled style="background:none">°C</button></div>'}
+function avisoTemp(){const f=R.frio,t=temp(f.t,f.neg);if(t==null||(f.exigMin==null&&f.exigMax==null))return'<div id="aviso-t"></div>';return'<div id="aviso-t" class="'+(fora(t,f)?"alerta":"bom")+'">'+(fora(t,f)?"FORA da temperatura exigida":"Dentro da temperatura exigida")+'</div>'}
+function pFrio(){
+ const f=R.frio;
+ if(R.tipo==="retorno")return tempHTML("Temperatura no painel agora","t","neg")+avisoTemp()+aparelhoHTML();
+ let h='<p class="mut">O caminhão está com baú refrigerado ligado (Thermo King)?</p><div class="duo"><button class="'+(f.usa==="sim"?"on verde":"")+'" data-a="frio" data-v="sim">Sim</button><button class="'+(f.usa==="nao"?"on amarelo":"")+'" data-a="frio" data-v="nao">Não</button></div>';
+ if(f.usa==="sim")h+=tempHTML("Temperatura no painel agora","t","neg")+'<details'+(f.exigTxt?" open":"")+'><summary>Temperatura exigida da carga (se souber)</summary><label>Faixa exigida</label><div class="duo" style="grid-template-columns:1fr 1fr"><input inputmode="decimal" data-ex="min" value="'+esc(f.exigMinTxt||"")+'" placeholder="mín. ex.: -20"><input inputmode="decimal" data-ex="max" value="'+esc(f.exigMaxTxt||"")+'" placeholder="máx. ex.: -15"></div><p class="mut">Use o sinal de menos no teclado, se tiver. Ex.: -18</p></details>'+avisoTemp()+aparelhoHTML();
+ return h;
+}
+function aparelhoHTML(){const f=R.frio;return'<label>O aparelho está funcionando?</label><div class="duo"><button class="'+(f.aparelho==="ok"?"on verde":"")+'" data-a="aparelho" data-v="ok">Sim</button><button class="'+(f.aparelho==="nok"?"on vermelho":"")+'" data-a="aparelho" data-v="nok">Não</button></div>'}
+function resumoHTML(){
+ const nk=Object.keys(R.nok||{}),f=R.frio,t=temp(f.t,f.neg);
+ return'<div class="card"><dl><dt>Placa</dt><dd>'+esc(R.placa)+'</dd><dt>Km</dt><dd>'+esc(R.km)+'</dd><dt>Motorista</dt><dd>'+esc(R.motorista.nome)+'</dd>'+(R.tipo==="saida"?'<dt>Ajudante</dt><dd>'+(R.semAjudante?"Sem ajudante":esc(R.ajudante))+(R.ajudante2?", "+esc(R.ajudante2):"")+'</dd><dt>Itens</dt><dd style="color:'+(nk.length?"var(--verm)":"var(--verde)")+'">'+(nk.length?nk.map(esc).join(", "):"Todos OK")+'</dd>':'')+
+ '<dt>Fotos</dt><dd>'+Object.keys(R.fotos).length+' do caminhão'+(R.avarias.length?" + "+R.avarias.length+" de avaria":"")+'</dd>'+(f.usa==="sim"?'<dt>Frio</dt><dd style="color:'+(fora(t,f)||f.aparelho==="nok"?"var(--verm)":"inherit")+'">'+(t!=null?t+" °C":"—")+' · aparelho '+(f.aparelho==="nok"?"COM PROBLEMA":"OK")+'</dd>':'')+'</dl></div>';
+}
+function pConferir(){return resumoHTML()+'<label for="c-obs">Observações <small>(se tiver)</small></label><textarea id="c-obs" data-k="obs">'+esc(R.obs)+'</textarea><p class="mut">Ao tocar em ENVIAR, o check-list fica guardado no celular e vai para o escritório assim que tiver internet.</p>'}
+function pFinal(){return resumoHTML()+'<label for="c-obs">Observações da volta <small>(se tiver)</small></label><textarea id="c-obs" data-k="obs">'+esc(R.obs)+'</textarea><label>Assinatura do motorista</label><p class="mut">Assine com o dedo no quadro.</p><canvas id="ass" width="600" height="200"></canvas><button class="link" data-a="limpar-ass">Apagar assinatura</button>'}
+function iniciarAssinatura(){
+ const c=$("#ass");const x=c.getContext("2d");x.lineWidth=3.5;x.lineCap="round";x.lineJoin="round";x.strokeStyle="#111";let on=false;
+ if(R.assinatura){const i=new Image();i.onload=()=>x.drawImage(i,0,0,c.width,c.height);i.src="data:image/png;base64,"+R.assinatura}
+ const pt=e=>{const r=c.getBoundingClientRect();return[(e.clientX-r.left)*c.width/r.width,(e.clientY-r.top)*c.height/r.height]};
+ c.onpointerdown=e=>{on=true;c.setPointerCapture(e.pointerId);const[a,b]=pt(e);x.beginPath();x.moveTo(a,b)};
+ c.onpointermove=e=>{if(!on)return;const[a,b]=pt(e);x.lineTo(a,b);x.stroke();R._assinou=true};
+ c.onpointerup=c.onpointercancel=()=>{if(on){on=false;R.assinatura=c.toDataURL("image/png").split(",")[1];salvar()}};
+}
+function validarPasso(p){
+ const f=[];
+ if(p==="caminhao"||p==="placa"){const pl=normPlaca(R.placa);if(pl.length<7)f.push("a placa (7 letras e números)");}
+ if(p==="caminhao"||p==="chegada"){const k=num(R.km);if(k==null)f.push("o km do painel");else if(p==="chegada"&&num(R.kmSaida)!=null&&k<num(R.kmSaida))f.push("o km (está menor que na saída)")}
+ if(p==="caminhao"&&!R.semAjudante&&!String(R.ajudante).trim())f.push("o nome do ajudante (ou toque em \"Estou sem ajudante\")");
+ if(p==="fotos"){R._falta=FOTOS.map(x=>x[0]).filter(k=>!R.fotos[k]);if(R._falta.length)f.push("as fotos marcadas em vermelho");if(R.avarias.some(a=>!String(a.desc).trim()))f.push("o que é cada avaria")}
+ if(p==="itens"){const s=Object.keys(R.nok).filter(k=>!String(R.nok[k]).trim());if(s.length)f.push("o problema em: "+s.join(", "))}
+ if(p==="frio"){const fr=R.frio;if(R.tipo==="saida"&&!fr.usa)f.push("se o baú é refrigerado");if(fr.usa==="sim"){if(num(fr.t)==null)f.push("a temperatura");else if(fr.neg==null)f.push("se a temperatura é abaixo ou acima de zero");if(!fr.aparelho)f.push("se o aparelho está funcionando")}}
+ if(p==="final"&&!R.assinatura)f.push("a assinatura");
+ if(f.length){toast("Falta: "+f.join("; "));if(p==="fotos")render();return false}
+ return true;
+}
+async function enviarRegistro(){
+ const P=passos();for(let i=0;i<P.length;i++)if(!validarPasso(P[i])){passo=i;render();return}
+ const f=R.frio,reg={tipo:R.tipo,id:R.id,criadoEm:R.criadoEm,enviadoEm:new Date().toISOString(),versao:C.VERSAO,data:R.data,hora:R.hora,motorista:R.motorista,placa:normPlaca(R.placa),km:num(R.km),fotos:R.fotos,avarias:R.avarias.map(a=>({desc:String(a.desc).trim(),foto:a.foto})),obs:String(R.obs||"").trim(),gps:R.gps||null};
+ if(R.tipo==="saida")Object.assign(reg,{ajudante:R.semAjudante?"":R.ajudante.trim(),ajudante2:R.ajudante2.trim(),transporte:R.transporte.trim(),lacre:R.lacre.trim(),clientes:num(R.clientes),peso:R.peso.trim(),itensNok:R.nok,frio:f.usa==="sim"?{temp:temp(f.t,f.neg),exigMin:f.exigMin,exigMax:f.exigMax,aparelho:f.aparelho}:null});
+ else Object.assign(reg,{semSaidaNoCelular:R.outroCelular,clientesRet:num(R.clientesRet),pesoRet:String(R.pesoRet||"").trim(),frio:f.usa==="sim"?{temp:temp(f.t,f.neg),aparelho:f.aparelho,exigMin:f.exigMin,exigMax:f.exigMax}:null,assinatura:R.assinatura});
+ const b=document.querySelector('[data-a="enviar-reg"]');if(b){b.disabled=true;b.textContent="Guardando…"}
+ try{await F.guardar({chave:Date.now()+"-"+R.tipo,dados:reg})}catch(e){toast("Não foi possível guardar no celular. Libere espaço e tente de novo.");if(b){b.disabled=false;b.textContent="ENVIAR"}return}
+ let ab=LS.get("kp-abertas",[]);
+ if(R.tipo==="saida")ab.push({id:R.id,placa:reg.placa,data:R.data,hora:R.hora,km:reg.km,frio:!!reg.frio,exigMin:f.exigMin,exigMax:f.exigMax});
+ else ab=ab.filter(a=>a.id!==R.id&&!(R.outroCelular&&a.placa===reg.placa));
+ LS.set("kp-abertas",ab);
+ await F.apagarRascunho().catch(()=>{});
+ ultimoEnvio=null;R={_fim:reg.tipo,_placa:reg.placa};tela="fim";render();
+ pedirSyncFundo();await enviarFila();if(tela==="fim")render();
+}
+async function telaFim(){
+ const pend=await atualizarRede();const ok=!pend;
+ $("#app").innerHTML='<div class="ok-grande"><div class="circ" style="background:'+(ok?"var(--verde)":"var(--amar)")+'">'+(ok?"✓":"…")+'</div><h1>'+(R._fim==="saida"?"Saída registrada":"Retorno registrado")+'</h1><p style="font-size:22px;font-weight:800;letter-spacing:.05em">'+esc(R._placa)+'</p>'+(ok?'<div class="status ok">Enviado para o escritório.</div>':'<div class="status pend">Guardado no celular. Sem internet agora: vai enviar sozinho quando o sinal voltar. Pode fechar o app.</div>')+(R._fim==="saida"?'<p class="mut">Boa viagem! Na volta, abra o app e toque em "Registrar retorno".</p>':'')+'</div>';
+ $("#rod").innerHTML='<div class="rodape"><div><button class="prox" data-a="inicio">Voltar ao início</button></div></div>';
+}
+
+/* ================= eventos ================= */
+document.addEventListener("input",e=>{
+ const t=e.target;
+ if(t.id==="d-cpf"){const p=t.selectionStart===t.value.length;t.value=cpfFmt(t.value);if(p)t.setSelectionRange(t.value.length,t.value.length);return}
+ if(!R)return;
+ if(t.dataset.k){R[t.dataset.k]=t.dataset.k==="placa"?t.value.toUpperCase():t.value;salvar();return}
+ if(t.dataset.av){R.avarias[+t.dataset.av].desc=t.value;salvar();return}
+ if(t.dataset.nok){R.nok[t.dataset.nok]=t.value;salvar();return}
+ if(t.dataset.fr){R.frio[t.dataset.fr]=t.value.replace(/^-/,"");if(/^-/.test(t.value)){R.frio.neg=true}const a=$("#aviso-t");if(a)a.outerHTML=avisoTemp();salvar();return}
+ if(t.dataset.ex){const v=num(t.value);R.frio["exig"+(t.dataset.ex==="min"?"Min":"Max")]=v;R.frio["exig"+(t.dataset.ex==="min"?"Min":"Max")+"Txt"]=t.value;R.frio.exigTxt=1;const a=$("#aviso-t");if(a)a.outerHTML=avisoTemp();salvar();return}
+});
+document.addEventListener("change",async e=>{
+ const t=e.target;if(!t.dataset.foto||!R)return;
+ const file=t.files&&t.files[0];if(!file)return;
+ const k=t.dataset.foto,nome=k==="avaria"?"Avaria":FOTOS.find(x=>x[0]===k)[1];
+ const lab=t.closest("label");if(lab){lab.style.opacity=".5"}
+ try{const b64=await processarFoto(file,normPlaca(R.placa)+" · "+(R.tipo==="saida"?"SAÍDA":"RETORNO")+" · "+nome);
+  if(k==="avaria")R.avarias.push({desc:"",foto:b64});else{R.fotos[k]=b64;if(R._falta)R._falta=R._falta.filter(x=>x!==k)}
+  await salvar(true);const y=scrollY;render();scrollTo(0,y);
+  if(k==="avaria"){const ins=document.querySelectorAll("[data-av]");if(ins.length)ins[ins.length-1].focus()}
+ }catch(err){toast("Não deu para ler a foto. Tente de novo.");if(lab)lab.style.opacity=""}
+});
+document.addEventListener("click",async e=>{
+ const z=e.target.closest("#zoom");if(z){z.classList.remove("on");return}
+ const im=e.target.closest(".galeria img");if(im&&im.src.startsWith("data:")){const zz=$("#zoom");zz.querySelector("img").src=im.src;zz.classList.add("on");return}
+ const b=e.target.closest("[data-a]");if(!b)return;const a=b.dataset.a;
+ switch(a){
+  case"salvar-dados":{const n=$("#d-nome").value.trim().replace(/\s+/g," "),c=soDig($("#d-cpf").value);
+   if(n.split(" ").length<2){toast("Escreva o nome completo");$("#d-nome").classList.add("erro");return}
+   if(!cpfOk(c)){toast("CPF inválido. Confira os números.");$("#d-cpf").classList.add("erro");return}
+   LS.set("kp-mot",{nome:n,cpf:c});tela="inicio";return render()}
+  case"trocar":tela="dados";return render();
+  case"inicio":tela="inicio";R=null;return render();
+  case"nova":R=novoRegistro("saida");tela="saida";passo=0;salvar(true);return render();
+  case"retorno":{const ab=LS.get("kp-abertas",[]).find(x=>x.id===b.dataset.id);if(!ab)return;R=novoRegistro("retorno",ab);R.frio.exigMin=ab.exigMin??null;R.frio.exigMax=ab.exigMax??null;tela="retorno";passo=0;salvar();return render()}
+  case"retorno-outro":R=novoRegistro("retorno",null);tela="retorno";passo=0;salvar();return render();
+  case"continuar":{R=await F.lerRascunho();if(!R){return render()}tela=R.tipo;passo=R._passo||0;return render()}
+  case"descartar":await F.apagarRascunho().catch(()=>{});return render();
+  case"enviar":return enviarFila(true);
+  case"instalar":if(instalar){instalar.prompt();instalar=null;render()}return;
+  case"admin":tela="adm";return render();
+  case"voltar":if(passo===0){if(R&&R.tipo)toast("Guardado. Toque em \"Continuar de onde parou\" para voltar.");tela="inicio";return render()}passo--;R._passo=passo;salvar();return render();
+  case"proximo":{const p=passos()[passo];if(!validarPasso(p))return;passo++;R._passo=passo;salvar(true);return render()}
+  case"enviar-reg":return enviarRegistro();
+  case"sem-ajudante":R.semAjudante=true;R.ajudante="";salvar();return render();
+  case"com-ajudante":R.semAjudante=false;salvar();return render();
+  case"rm-av":R.avarias.splice(+b.dataset.i,1);salvar();{const y=scrollY;render();scrollTo(0,y)}return;
+  case"item":{const n=b.dataset.n;if(n in R.nok)delete R.nok[n];else R.nok[n]="";salvar();const y=scrollY;render();scrollTo(0,y);if(n in R.nok){const i=document.querySelector('[data-nok="'+CSS.escape(n)+'"]');if(i)i.focus({preventScroll:true})}return}
+  case"frio":R.frio.usa=b.dataset.v;salvar();if(R.tipo==="saida"&&b.dataset.v==="nao"){render()}else render();return;
+  case"aparelho":R.frio.aparelho=b.dataset.v;salvar();{const y=scrollY;render();scrollTo(0,y)}return;
+  case"sinal":R.frio[b.dataset.k]=b.dataset.v==="1";salvar();{const y=scrollY;render();scrollTo(0,y)}return;
+  case"limpar-ass":{const c=$("#ass");c.getContext("2d").clearRect(0,0,c.width,c.height);R.assinatura="";salvar();return}
+  /* administrativo */
+  case"adm-entrar":return admEntrar(b);
+  case"adm-sair":adm=null;LS.set("kp-adm",null);admDados=null;tela="adm";return render();
+  case"adm-atualizar":admDados=null;return admCarregar();
+  case"adm-abrir":admSel=b.dataset.id;tela="adm-det";return render();
+  case"adm-voltar":admSel=null;tela="adm-lista";return render();
+  case"adm-validar":return admValidar(b.dataset.v,b);
+  case"adm-app":tela="inicio";return render();
+ }
+});
+
+/* ================= administrativo ================= */
+async function api(acao,dados){
+ if(!C.API_URL)throw new Error("O app ainda não foi ligado à planilha (API_URL vazia em config.js).");
+ const r=await fetch(C.API_URL,{method:"POST",body:JSON.stringify(Object.assign({acao,token:adm&&adm.token},dados||{}))});
+ const j=await r.json();
+ if(!j.ok){if(j.erro==="login"){adm=null;LS.set("kp-adm",null);tela="adm";render()}throw new Error(j.erro||"erro")}
+ return j;
+}
+const filtroAdm={q:"",st:"",de:"",ate:""};
+function telaAdm(){
+ if(!adm){adm=LS.get("kp-adm",null);if(adm&&adm.exp<Date.now())adm=null}
+ if(!adm){
+  $("#app").innerHTML='<h1>Área do administrativo</h1><p class="mut">Para o administrativo e a diretoria conferirem e validarem os check-lists.</p><label for="a-nome">Seu nome</label><input id="a-nome" value="'+esc(LS.get("kp-adm-nome",""))+'" autocomplete="name"><label for="a-senha">Senha</label><input id="a-senha" type="password" autocomplete="current-password"><button class="grande" data-a="adm-entrar">Entrar</button><p><button class="link" data-a="adm-app">← Voltar ao app do motorista</button></p>';
+  return;
+ }
+ if(tela==="adm"||tela==="adm-lista"){tela="adm-lista";return admLista()}
+ if(tela==="adm-det")return admDetalhe();
+}
+async function admEntrar(b){
+ const nome=$("#a-nome").value.trim(),senha=$("#a-senha").value;
+ if(!nome||!senha){toast("Preencha nome e senha");return}
+ b.disabled=true;b.textContent="Entrando…";
+ try{const j=await api("login",{nome,senha});adm={token:j.token,papel:j.papel,nome:j.nome,exp:Date.now()+11*3600e3};LS.set("kp-adm",adm);LS.set("kp-adm-nome",nome);tela="adm-lista";render()}
+ catch(e){toast(e.message==="Failed to fetch"?"Sem internet.":e.message);b.disabled=false;b.textContent="Entrar"}
+}
+async function admCarregar(){
+ const de=filtroAdm.de||(()=>{const d=new Date(Date.now()-30*864e5);return d.getFullYear()+"-"+p2(d.getMonth()+1)+"-"+p2(d.getDate())})();
+ $("#app").innerHTML='<p class="mut">Carregando check-lists…</p>';
+ try{admDados=await api("listar",{de,ate:filtroAdm.ate||""});admDados._de=de}catch(e){$("#app").innerHTML='<div class="status erro">'+esc(e.message==="Failed to fetch"?"Sem internet. Tente de novo.":e.message)+'</div><button class="grande" data-a="adm-atualizar">Tentar de novo</button>';return}
+ if(tela==="adm-lista")admLista();
+}
+const situ=l=>({"Em rota":"t-rota","Aguardando validação":"t-aguard","Validado":"t-val","Reprovado":"t-rep"})[l.situacao]||"t-sem";
+const temProblema=l=>(l.saida&&(Object.keys(l.saida.itensNok||{}).length||(l.saida.avarias||[]).length||(l.saida.frio&&(l.saida.frio.aparelho==="nok"||l.saida.frio.fora))))||(l.retorno&&((l.retorno.avarias||[]).length||(l.retorno.frio&&(l.retorno.frio.aparelho==="nok"||l.retorno.frio.fora))));
+function admFiltrados(){const q=filtroAdm.q.trim().toLowerCase();return(admDados.linhas||[]).filter(l=>{if(filtroAdm.st==="prob"){if(!temProblema(l))return false}else if(filtroAdm.st&&l.situacao!==filtroAdm.st)return false;if(q&&![l.placa,l.motorista,l.cpf,l.ajudante,l.ajudante2].join(" ").toLowerCase().includes(q))return false;return true})}
+function admLista(){
+ if(!admDados)return admCarregar();
+ const L=admDados.linhas||[],cnt=s=>L.filter(l=>l.situacao===s).length,prob=L.filter(temProblema).length;
+ let h='<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap"><h1 style="margin:0">Check-lists</h1><span class="mut">'+esc(adm.nome)+' · '+(adm.papel==="adm"?"Administrativo":"Diretoria")+' · <button class="link" data-a="adm-sair">Sair</button></span></div>';
+ h+='<div class="kpis"><div class="kpi"><b>'+cnt("Em rota")+'</b><span>Em rota</span></div><div class="kpi"><b>'+cnt("Aguardando validação")+'</b><span>Aguardando validação</span></div><div class="kpi'+(prob?" vm":"")+'"><b>'+prob+'</b><span>Com problema (NOK, avaria, frio)</span></div><div class="kpi"><b>'+L.length+'</b><span>No período</span></div></div>';
+ h+='<div class="filtros"><input id="fa-q" placeholder="Buscar placa, motorista, CPF, ajudante" value="'+esc(filtroAdm.q)+'"><select id="fa-st"><option value="">Todas as situações</option><option>Em rota</option><option>Aguardando validação</option><option>Validado</option><option>Reprovado</option><option value="prob">Com problema</option><option>Retorno sem saída</option></select><input type="date" id="fa-de" value="'+esc(filtroAdm.de||admDados._de)+'" aria-label="De"><input type="date" id="fa-ate" value="'+esc(filtroAdm.ate)+'" aria-label="Até"></div>';
+ h+='<div style="display:flex;gap:10px;flex-wrap:wrap;margin:10px 0"><button data-a="adm-atualizar">Atualizar</button>'+(admDados.planilha&&/^https:\/\/docs\.google\.com\//.test(admDados.planilha)?'<a class="link" style="display:flex;align-items:center" href="'+esc(admDados.planilha)+'" target="_blank" rel="noopener">Abrir planilha no Google</a>':'')+'</div><div id="lista-adm"></div>';
+ $("#app").innerHTML=h;$("#fa-st").value=filtroAdm.st;admListaItens();
+}
+function admListaItens(){
+ const L=admFiltrados(),e=$("#lista-adm");if(!e)return;
+ e.innerHTML=L.length?L.slice(0,400).map(l=>'<button class="linhaadm'+(temProblema(l)?" v":"")+'" data-a="adm-abrir" data-id="'+esc(l.id)+'"><div style="display:flex;justify-content:space-between;gap:8px"><b>'+esc(l.placa)+'</b><span class="tag '+situ(l)+'">'+esc(l.situacao)+'</span></div><div>'+esc(l.motorista)+(l.ajudante?" · "+esc(l.ajudante):"")+'</div><div class="mut">'+esc(br(l.dataSaida))+' '+esc(l.horaSaida||"")+(l.horaRetorno?" → "+esc(l.horaRetorno):"")+(temProblema(l)?' · <b style="color:var(--verm)">tem problema</b>':'')+'</div></button>').join(''):'<p class="mut">Nenhum check-list encontrado.</p>';
+}
+document.addEventListener("input",e=>{if(e.target.id==="fa-q"){filtroAdm.q=e.target.value;admListaItens()}});
+document.addEventListener("change",e=>{const t=e.target;if(t.id==="fa-st"){filtroAdm.st=t.value;admListaItens()}else if(t.id==="fa-de"||t.id==="fa-ate"){filtroAdm[t.id==="fa-de"?"de":"ate"]=t.value;admDados=null;admCarregar()}});
+function blocoFotos(fotos,avarias,ass){
+ const it=[];FOTOS.forEach(([k,n])=>{if(fotos&&fotos[k])it.push([fotos[k],n])});(avarias||[]).forEach((a,i)=>it.push([a.foto,"Avaria "+(i+1)+": "+(a.desc||"")]));if(ass)it.push([ass,"Assinatura"]);
+ return it.length?'<div class="galeria">'+it.map(([id,n])=>'<figure><img data-fid="'+esc(id)+'" alt="'+esc(n)+'"><figcaption>'+esc(n)+'</figcaption></figure>').join('')+'</div>':'<p class="mut">Sem fotos.</p>';
+}
+function frioTxt(f){if(!f)return"Não refrigerado";return(f.temp!=null?f.temp+" °C":"—")+(f.fora?" · FORA da faixa":"")+" · aparelho "+(f.aparelho==="nok"?"COM PROBLEMA":"OK")+(f.exigMin!=null||f.exigMax!=null?" (exigido "+(f.exigMin??"")+" a "+(f.exigMax??"")+" °C)":"")}
+function admDetalhe(){
+ const l=(admDados&&admDados.linhas||[]).find(x=>x.id===admSel);if(!l){tela="adm-lista";return render()}
+ const s=l.saida||{},r=l.retorno||null,nk=Object.entries(s.itensNok||{});
+ let h='<button class="link" data-a="adm-voltar">← Voltar à lista</button><div style="display:flex;justify-content:space-between;gap:8px;align-items:center"><h1 style="margin:0;letter-spacing:.04em">'+esc(l.placa)+'</h1><span class="tag '+situ(l)+'">'+esc(l.situacao)+'</span></div>';
+ h+='<div class="card"><h2 style="margin-top:0">Saída · '+esc(br(l.dataSaida))+' '+esc(l.horaSaida||"")+'</h2><dl><dt>Motorista</dt><dd>'+esc(l.motorista)+'</dd><dt>CPF</dt><dd>'+esc(cpfFmt(l.cpf))+'</dd><dt>Ajudante</dt><dd>'+(esc(l.ajudante)||"Sem ajudante")+(l.ajudante2?", "+esc(l.ajudante2):"")+'</dd><dt>Km</dt><dd>'+esc(s.km??"")+'</dd>'+(s.transporte?'<dt>Transporte</dt><dd>'+esc(s.transporte)+'</dd>':'')+(s.lacre?'<dt>Lacre</dt><dd>'+esc(s.lacre)+'</dd>':'')+(s.clientes!=null?'<dt>Clientes</dt><dd>'+esc(s.clientes)+'</dd>':'')+(s.peso?'<dt>Peso</dt><dd>'+esc(s.peso)+'</dd>':'')+
+ '<dt>Itens</dt><dd style="color:'+(nk.length?"var(--verm)":"var(--verde)")+'">'+(nk.length?nk.map(([k,v])=>esc(k)+": "+esc(v)).join("<br>"):"Todos OK")+'</dd><dt>Frio</dt><dd style="color:'+(s.frio&&(s.frio.fora||s.frio.aparelho==="nok")?"var(--verm)":"inherit")+'">'+esc(frioTxt(s.frio))+'</dd>'+(s.obs?'<dt>Obs.</dt><dd>'+esc(s.obs)+'</dd>':'')+(s.gps?'<dt>Local</dt><dd><a href="https://www.google.com/maps?q='+(+s.gps[0])+','+(+s.gps[1])+'" target="_blank" rel="noopener">Ver no mapa</a></dd>':'')+'</dl>'+blocoFotos(s.fotosIds,s.avariasIds)+'</div>';
+ if(r)h+='<div class="card"><h2 style="margin-top:0">Retorno · '+esc(br(l.dataRetorno))+' '+esc(l.horaRetorno||"")+'</h2><dl><dt>Km chegada</dt><dd>'+esc(r.km??"")+'</dd><dt>Km rodado</dt><dd>'+esc(l.kmRodado??"—")+'</dd>'+(r.clientesRet!=null?'<dt>Clientes ret.</dt><dd>'+esc(r.clientesRet)+'</dd>':'')+(r.pesoRet?'<dt>Peso ret.</dt><dd>'+esc(r.pesoRet)+'</dd>':'')+(r.frio?'<dt>Frio</dt><dd style="color:'+(r.frio.fora||r.frio.aparelho==="nok"?"var(--verm)":"inherit")+'">'+esc(frioTxt(r.frio))+'</dd>':'')+(r.obs?'<dt>Obs.</dt><dd>'+esc(r.obs)+'</dd>':'')+'</dl>'+blocoFotos(r.fotosIds,r.avariasIds,r.assinaturaId)+'</div>';
+ else h+='<div class="status pend">Caminhão ainda não voltou (sem retorno registrado).</div>';
+ const v=l.validacao||{};
+ if(v.situacao)h+='<div class="card"><b>'+esc(v.situacao)+'</b> por '+esc(v.por)+' em '+esc(v.em)+(v.comentario?'<p>'+esc(v.comentario)+'</p>':'')+'</div>';
+ if(adm.papel==="adm")h+='<div class="card"><h2 style="margin-top:0">'+(v.situacao?"Alterar validação":"Validar")+'</h2><textarea id="adm-com" placeholder="Comentário (obrigatório para reprovar)"></textarea><div class="duo" style="margin-top:10px"><button class="verde" data-a="adm-validar" data-v="Validado">Validar</button><button class="vermelho" data-a="adm-validar" data-v="Reprovado">Reprovar</button></div></div>';
+ if(l.pasta&&/^https:\/\/drive\.google\.com\//.test(l.pasta))h+='<p><a class="link" href="'+esc(l.pasta)+'" target="_blank" rel="noopener">Abrir pasta de fotos no Drive</a></p>';
+ $("#app").innerHTML=h;
+ carregarFotos();
+}
+async function carregarFotos(){
+ for(const im of document.querySelectorAll("img[data-fid]")){
+  const id=im.dataset.fid;if(!/^[A-Za-z0-9_-]{10,80}$/.test(id))continue;
+  if(!fotoCache[id]){try{const j=await api("foto",{id});fotoCache[id]="data:"+(j.tipo==="image/png"?"image/png":"image/jpeg")+";base64,"+j.b64}catch(e){continue}}
+  if(document.body.contains(im))im.src=fotoCache[id];
+ }
+}
+async function admValidar(sit,b){
+ const com=$("#adm-com").value.trim();if(sit==="Reprovado"&&!com){toast("Escreva o motivo da reprovação");return}
+ b.disabled=true;
+ try{const j=await api("validar",{id:admSel,situacao:sit,comentario:com});const l=admDados.linhas.find(x=>x.id===admSel);if(l){l.situacao=sit;l.validacao=j.validacao}toast(sit==="Validado"?"Check-list validado":"Check-list reprovado");render()}
+ catch(e){toast(e.message==="Failed to fetch"?"Sem internet.":e.message);b.disabled=false}
+}
+
+/* ================= início ================= */
+if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js").catch(()=>{});
+if(location.hash==="#admin")tela="adm";
+render();atualizarRede();setTimeout(()=>enviarFila(),1500);
+}
+</script>
+</body>
+</html>
