@@ -4,5 +4,5 @@
 self.KP_CONFIG = {
   API_URL: "",
   CODIGO: "KP-7Q4M-2026",
-  VERSAO: "1.0.0"
+  VERSAO: "1.1.0"
 };

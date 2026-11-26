@@ -190,7 +190,7 @@ async function telaInicio(){
  let h='<p class="mut">Motorista</p><h1>'+esc(m.nome.split(" ")[0])+'</h1><p class="mut">CPF '+esc(cpfFmt(m.cpf))+' · <button class="link" data-a="trocar">Não é você? Trocar</button></p>';
  if(!C.API_URL)h+='<div class="status erro">App em configuração. Os check-lists ficam guardados no celular até o administrativo terminar a configuração.</div>';
  if(rasc)h+='<div class="card"><b>Você tem um check-list começado</b><p class="mut">'+(rasc.tipo==="saida"?"Saída":"Retorno")+(rasc.placa?" · "+esc(rasc.placa):"")+'</p><button class="grande" data-a="continuar">Continuar de onde parou</button><button class="link" data-a="descartar">Descartar e começar outro</button></div>';
- abertas.forEach(a=>{h+='<button class="retorno" data-a="retorno" data-id="'+esc(a.id)+'"><span>Registrar retorno</span><b>'+esc(a.placa)+'</b><span class="mut" style="color:#333">Saiu em '+esc(br(a.data))+' às '+esc(a.hora)+'</span></button>'});
+ abertas.forEach(a=>{h+='<button class="retorno" data-a="retorno" data-id="'+esc(a.id)+'"><span>Check-list em aberto · toque para completar o retorno</span><b>'+esc(a.placa)+'</b><span class="mut" style="color:#333">Saiu em '+esc(br(a.data))+' às '+esc(a.hora)+'</span></button>'});
  h+='<button class="grande" data-a="nova">NOVA SAÍDA</button>';
  h+=pend?'<div class="status pend">'+pend+' check-list(s) guardado(s) no celular. Vai enviar sozinho quando tiver internet.<br><button class="link" data-a="enviar">Enviar agora</button></div>':'<div class="status ok">Tudo enviado para o escritório.</div>';
  if(instalar)h+='<button class="grande verde" data-a="instalar">Instalar o app neste celular</button>';
@@ -205,8 +205,8 @@ function telaDados(){
 function novoRegistro(tipo,base){
  const m=motorista();
  const r={tipo,id:base?base.id:uid(),criadoEm:new Date().toISOString(),data:hoje(),hora:hora(),motorista:{nome:m.nome,cpf:m.cpf},fotos:{},avarias:[],obs:""};
- if(tipo==="saida")Object.assign(r,{placa:"",km:"",ajudante:"",semAjudante:false,ajudante2:"",transporte:"",lacre:"",clientes:"",peso:"",nok:{},frio:{usa:null,neg:null,t:"",exigMin:"",exigMax:"",aparelho:""}});
- else Object.assign(r,{placa:base?base.placa:"",kmSaida:base?base.km:"",outroCelular:!base,km:"",clientesRet:"",pesoRet:"",frio:{usa:base&&base.frio?"sim":null,neg:null,t:"",aparelho:"",exigMin:base?base.exigMin:null,exigMax:base?base.exigMax:null},assinatura:""});
+ if(tipo==="saida")Object.assign(r,{placa:"",km:"",ajudante:"",semAjudante:false,transporte:"",lacre:"",clientes:"",peso:"",nok:{},frio:{usa:null,neg:null,t:"",exigMin:"",exigMax:"",aparelho:""}});
+ else Object.assign(r,{placa:base?base.placa:"",kmSaida:base?base.km:"",outroCelular:!base,km:"",clientesRet:"",pesoRet:"",divergencia:{houve:null,desc:""},frio:{usa:base&&base.frio?"sim":null,neg:null,t:"",aparelho:"",exigMin:base?base.exigMin:null,exigMax:base?base.exigMax:null},assinatura:""});
  if(tipo==="saida"&&navigator.geolocation)navigator.geolocation.getCurrentPosition(p=>{if(R&&R.id===r.id){R.gps=[+p.coords.latitude.toFixed(5),+p.coords.longitude.toFixed(5)];salvar()}},()=>{},{timeout:15000,maximumAge:120000,enableHighAccuracy:false});
  return r;
 }
@@ -214,7 +214,7 @@ function passos(){
  if(R.tipo==="saida")return["caminhao","fotos","itens","frio","conferir"];
  const p=[];if(R.outroCelular)p.push("placa");p.push("chegada","fotos");if(R.frio.usa==="sim")p.push("frio");p.push("final");return p;
 }
-const TITULO={caminhao:"Caminhão e equipe",fotos:"Fotos",itens:"Itens do caminhão",frio:"Baú refrigerado",conferir:"Conferir e enviar",placa:"Qual caminhão?",chegada:"Chegada",final:"Assinar e enviar"};
+const TITULO={caminhao:"Caminhão e equipe",fotos:"Fotos",itens:"Itens do caminhão",frio:"Baú refrigerado",conferir:"Conferir e enviar",placa:"Qual caminhão?",chegada:"Chegada da rota",final:"Assinar e enviar"};
 function telaPasso(){
  const P=passos();if(passo>=P.length)passo=P.length-1;const p=P[passo];
  let h='<p class="passo">'+(R.tipo==="saida"?"SAÍDA":"RETORNO")+(R.placa?" · "+esc(R.placa):"")+' · passo '+(passo+1)+' de '+P.length+'</p><div class="barra"><i style="width:'+((passo+1)/P.length*100)+'%"></i></div><h1>'+TITULO[p]+'</h1>';
@@ -228,10 +228,15 @@ const campo=(rot,k,o={})=>'<label for="c-'+k+'">'+rot+(o.opc?' <small>(se tiver)
 function pCaminhao(){
  return campo("Placa do caminhão","placa",{cls:"placa",ph:"ABC1D23",ac:"characters"})+campo("Km no painel (hodômetro)","km",{im:"numeric",ph:"Ex.: 125400"})+
  (R.semAjudante?'<label>Ajudante</label><div class="card" style="margin:0">Saindo sem ajudante. <button class="link" data-a="com-ajudante">Tenho ajudante</button></div>':campo("Nome do ajudante","ajudante",{ac:"words"})+'<button class="link" data-a="sem-ajudante">Estou sem ajudante</button>')+
- '<details'+(R.ajudante2||R.transporte||R.lacre||R.clientes||R.peso?" open":"")+'><summary>Mais dados (opcional)</summary>'+campo("Segundo ajudante","ajudante2",{opc:1,ac:"words"})+campo("Nº do transporte / embarque","transporte",{opc:1})+campo("Nº do lacre","lacre",{opc:1})+campo("Quantidade de clientes","clientes",{opc:1,im:"numeric"})+campo("Peso da carga (kg)","peso",{opc:1,im:"decimal"})+'</details>';
+ campo("Quantas entregas no caminhão","clientes",{opc:1,im:"numeric"})+campo("Peso da carga (kg)","peso",{opc:1,im:"decimal"})+
+ '<details'+(R.transporte||R.lacre?" open":"")+'><summary>Nº do transporte e lacre (opcional)</summary>'+campo("Nº do transporte / embarque","transporte",{opc:1})+campo("Nº do lacre","lacre",{opc:1})+'</details>';
 }
 function pPlaca(){return'<p class="mut">Digite a placa do caminhão que está voltando.</p>'+campo("Placa","placa",{cls:"placa",ph:"ABC1D23",ac:"characters"})+'<p class="mut" style="margin-top:12px">O escritório junta este retorno com a saída dessa placa.</p>'}
-function pChegada(){return(R.kmSaida?'<p class="mut">Km na saída: <b>'+esc(R.kmSaida)+'</b></p>':'')+campo("Km no painel agora","km",{im:"numeric",ph:"Ex.: 125780"})+'<details'+(R.clientesRet||R.pesoRet?" open":"")+'><summary>Voltou mercadoria? (opcional)</summary>'+campo("Clientes que retornaram","clientesRet",{opc:1,im:"numeric"})+campo("Peso retornado (kg)","pesoRet",{opc:1,im:"decimal"})+'</details>'}
+function kmRodHTML(){const a=num(R.kmSaida),b=num(R.km);if(a==null)return'<div id="kmrod"></div>';if(b==null)return'<div id="kmrod" class="card" style="margin:10px 0">Km na saída: <b>'+esc(R.kmSaida)+'</b></div>';return b<a?'<div id="kmrod" class="alerta">Km menor que na saída ('+esc(R.kmSaida)+'). Confira.</div>':'<div id="kmrod" class="bom">Rodou '+(b-a).toLocaleString("pt-BR")+' km nesta rota</div>'}
+function pChegada(){const d=R.divergencia;return'<p class="mut">Complete o check-list desta rota.</p>'+campo("Km no painel agora (chegada)","km",{im:"numeric",ph:"Ex.: 125780"})+kmRodHTML()+
+ campo("Quantas entregas voltaram?","clientesRet",{im:"numeric",ph:"0 se não voltou nenhuma"})+campo("Peso que voltou (kg)","pesoRet",{im:"decimal",ph:"0 se não voltou nada"})+
+ '<label>Teve alguma divergência na rota?</label><p class="mut">Falta ou sobra de mercadoria, avaria na carga, cliente fechado, recusa, atraso…</p><div class="duo"><button class="'+(d.houve===false?"on verde":"")+'" data-a="diverg" data-v="0">Não</button><button class="'+(d.houve===true?"on vermelho":"")+'" data-a="diverg" data-v="1">Sim</button></div>'+
+ (d.houve?'<label for="c-div">O que aconteceu?</label><textarea id="c-div" data-dv="1" placeholder="Ex.: cliente X recusou 2 caixas por avaria">'+esc(d.desc)+'</textarea>':'')}
 function pFotos(){
  const leg=R.tipo==="saida"?"Tire uma foto de cada. Toque no quadro para abrir a câmera.":"Tire as mesmas fotos de novo, agora na volta.";
  let h='<p class="mut">'+leg+'</p><div class="fotos">'+FOTOS.map(([k,n])=>{const b=R.fotos[k];return'<label class="foto'+(b?" tem":(R._falta&&R._falta.includes(k)?" falta":""))+'">'+(b?'<img src="'+src(b)+'" alt=""><span>'+n+' ✓ trocar</span>':CAM+n)+'<input type="file" accept="image/*" capture="environment" data-foto="'+k+'" aria-label="'+n+'"></label>'}).join('')+'</div>';
@@ -257,8 +262,8 @@ function pFrio(){
 function aparelhoHTML(){const f=R.frio;return'<label>O aparelho está funcionando?</label><div class="duo"><button class="'+(f.aparelho==="ok"?"on verde":"")+'" data-a="aparelho" data-v="ok">Sim</button><button class="'+(f.aparelho==="nok"?"on vermelho":"")+'" data-a="aparelho" data-v="nok">Não</button></div>'}
 function resumoHTML(){
  const nk=Object.keys(R.nok||{}),f=R.frio,t=temp(f.t,f.neg);
- return'<div class="card"><dl><dt>Placa</dt><dd>'+esc(R.placa)+'</dd><dt>Km</dt><dd>'+esc(R.km)+'</dd><dt>Motorista</dt><dd>'+esc(R.motorista.nome)+'</dd>'+(R.tipo==="saida"?'<dt>Ajudante</dt><dd>'+(R.semAjudante?"Sem ajudante":esc(R.ajudante))+(R.ajudante2?", "+esc(R.ajudante2):"")+'</dd><dt>Itens</dt><dd style="color:'+(nk.length?"var(--verm)":"var(--verde)")+'">'+(nk.length?nk.map(esc).join(", "):"Todos OK")+'</dd>':'')+
- '<dt>Fotos</dt><dd>'+Object.keys(R.fotos).length+' do caminhão'+(R.avarias.length?" + "+R.avarias.length+" de avaria":"")+'</dd>'+(f.usa==="sim"?'<dt>Frio</dt><dd style="color:'+(fora(t,f)||f.aparelho==="nok"?"var(--verm)":"inherit")+'">'+(t!=null?t+" °C":"—")+' · aparelho '+(f.aparelho==="nok"?"COM PROBLEMA":"OK")+'</dd>':'')+'</dl></div>';
+ return'<div class="card"><dl><dt>Placa</dt><dd>'+esc(R.placa)+'</dd><dt>Km</dt><dd>'+esc(R.km)+'</dd><dt>Motorista</dt><dd>'+esc(R.motorista.nome)+'</dd>'+(R.tipo==="saida"?'<dt>Ajudante</dt><dd>'+(R.semAjudante?"Sem ajudante":esc(R.ajudante))+'</dd><dt>Itens</dt><dd style="color:'+(nk.length?"var(--verm)":"var(--verde)")+'">'+(nk.length?nk.map(esc).join(", "):"Todos OK")+'</dd>':'')+
+ (R.tipo==="retorno"?'<dt>Km rodado</dt><dd>'+(num(R.kmSaida)!=null&&num(R.km)!=null?(num(R.km)-num(R.kmSaida)).toLocaleString("pt-BR")+" km":"—")+'</dd><dt>Voltou</dt><dd>'+esc(R.clientesRet||0)+' entrega(s) · '+esc(R.pesoRet||0)+' kg</dd><dt>Divergência</dt><dd style="color:'+(R.divergencia.houve?"var(--verm)":"inherit")+'">'+(R.divergencia.houve?esc(R.divergencia.desc):"Não")+'</dd>':'')+'<dt>Fotos</dt><dd>'+Object.keys(R.fotos).length+' do caminhão'+(R.avarias.length?" + "+R.avarias.length+" de avaria":"")+'</dd>'+(f.usa==="sim"?'<dt>Frio</dt><dd style="color:'+(fora(t,f)||f.aparelho==="nok"?"var(--verm)":"inherit")+'">'+(t!=null?t+" °C":"—")+' · aparelho '+(f.aparelho==="nok"?"COM PROBLEMA":"OK")+'</dd>':'')+'</dl></div>';
 }
 function pConferir(){return resumoHTML()+'<label for="c-obs">Observações <small>(se tiver)</small></label><textarea id="c-obs" data-k="obs">'+esc(R.obs)+'</textarea><p class="mut">Ao tocar em ENVIAR, o check-list fica guardado no celular e vai para o escritório assim que tiver internet.</p>'}
 function pFinal(){return resumoHTML()+'<label for="c-obs">Observações da volta <small>(se tiver)</small></label><textarea id="c-obs" data-k="obs">'+esc(R.obs)+'</textarea><label>Assinatura do motorista</label><p class="mut">Assine com o dedo no quadro.</p><canvas id="ass" width="600" height="200"></canvas><button class="link" data-a="limpar-ass">Apagar assinatura</button>'}
@@ -274,6 +279,7 @@ function validarPasso(p){
  const f=[];
  if(p==="caminhao"||p==="placa"){const pl=normPlaca(R.placa);if(pl.length<7)f.push("a placa (7 letras e números)");}
  if(p==="caminhao"||p==="chegada"){const k=num(R.km);if(k==null)f.push("o km do painel");else if(p==="chegada"&&num(R.kmSaida)!=null&&k<num(R.kmSaida))f.push("o km (está menor que na saída)")}
+ if(p==="chegada"){if(num(R.clientesRet)==null)f.push("quantas entregas voltaram (0 se nenhuma)");if(num(R.pesoRet)==null)f.push("o peso que voltou (0 se nada)");if(R.divergencia.houve==null)f.push("se teve divergência na rota");else if(R.divergencia.houve&&!String(R.divergencia.desc).trim())f.push("o que aconteceu na divergência")}
  if(p==="caminhao"&&!R.semAjudante&&!String(R.ajudante).trim())f.push("o nome do ajudante (ou toque em \"Estou sem ajudante\")");
  if(p==="fotos"){R._falta=FOTOS.map(x=>x[0]).filter(k=>!R.fotos[k]);if(R._falta.length)f.push("as fotos marcadas em vermelho");if(R.avarias.some(a=>!String(a.desc).trim()))f.push("o que é cada avaria")}
  if(p==="itens"){const s=Object.keys(R.nok).filter(k=>!String(R.nok[k]).trim());if(s.length)f.push("o problema em: "+s.join(", "))}
@@ -285,8 +291,8 @@ function validarPasso(p){
 async function enviarRegistro(){
  const P=passos();for(let i=0;i<P.length;i++)if(!validarPasso(P[i])){passo=i;render();return}
  const f=R.frio,reg={tipo:R.tipo,id:R.id,criadoEm:R.criadoEm,enviadoEm:new Date().toISOString(),versao:C.VERSAO,data:R.data,hora:R.hora,motorista:R.motorista,placa:normPlaca(R.placa),km:num(R.km),fotos:R.fotos,avarias:R.avarias.map(a=>({desc:String(a.desc).trim(),foto:a.foto})),obs:String(R.obs||"").trim(),gps:R.gps||null};
- if(R.tipo==="saida")Object.assign(reg,{ajudante:R.semAjudante?"":R.ajudante.trim(),ajudante2:R.ajudante2.trim(),transporte:R.transporte.trim(),lacre:R.lacre.trim(),clientes:num(R.clientes),peso:R.peso.trim(),itensNok:R.nok,frio:f.usa==="sim"?{temp:temp(f.t,f.neg),exigMin:f.exigMin,exigMax:f.exigMax,aparelho:f.aparelho}:null});
- else Object.assign(reg,{semSaidaNoCelular:R.outroCelular,clientesRet:num(R.clientesRet),pesoRet:String(R.pesoRet||"").trim(),frio:f.usa==="sim"?{temp:temp(f.t,f.neg),aparelho:f.aparelho,exigMin:f.exigMin,exigMax:f.exigMax}:null,assinatura:R.assinatura});
+ if(R.tipo==="saida")Object.assign(reg,{ajudante:R.semAjudante?"":R.ajudante.trim(),transporte:R.transporte.trim(),lacre:R.lacre.trim(),clientes:num(R.clientes),peso:R.peso.trim(),itensNok:R.nok,frio:f.usa==="sim"?{temp:temp(f.t,f.neg),exigMin:f.exigMin,exigMax:f.exigMax,aparelho:f.aparelho}:null});
+ else Object.assign(reg,{semSaidaNoCelular:R.outroCelular,clientesRet:num(R.clientesRet),pesoRet:String(R.pesoRet||"").trim(),divergencia:{houve:!!R.divergencia.houve,desc:String(R.divergencia.desc||"").trim()},frio:f.usa==="sim"?{temp:temp(f.t,f.neg),aparelho:f.aparelho,exigMin:f.exigMin,exigMax:f.exigMax}:null,assinatura:R.assinatura});
  const b=document.querySelector('[data-a="enviar-reg"]');if(b){b.disabled=true;b.textContent="Guardando…"}
  try{await F.guardar({chave:Date.now()+"-"+R.tipo,dados:reg})}catch(e){toast("Não foi possível guardar no celular. Libere espaço e tente de novo.");if(b){b.disabled=false;b.textContent="ENVIAR"}return}
  let ab=LS.get("kp-abertas",[]);
@@ -299,7 +305,7 @@ async function enviarRegistro(){
 }
 async function telaFim(){
  const pend=await atualizarRede();const ok=!pend;
- $("#app").innerHTML='<div class="ok-grande"><div class="circ" style="background:'+(ok?"var(--verde)":"var(--amar)")+'">'+(ok?"✓":"…")+'</div><h1>'+(R._fim==="saida"?"Saída registrada":"Retorno registrado")+'</h1><p style="font-size:22px;font-weight:800;letter-spacing:.05em">'+esc(R._placa)+'</p>'+(ok?'<div class="status ok">Enviado para o escritório.</div>':'<div class="status pend">Guardado no celular. Sem internet agora: vai enviar sozinho quando o sinal voltar. Pode fechar o app.</div>')+(R._fim==="saida"?'<p class="mut">Boa viagem! Na volta, abra o app e toque em "Registrar retorno".</p>':'')+'</div>';
+ $("#app").innerHTML='<div class="ok-grande"><div class="circ" style="background:'+(ok?"var(--verde)":"var(--amar)")+'">'+(ok?"✓":"…")+'</div><h1>'+(R._fim==="saida"?"Saída registrada":"Check-list completo")+'</h1><p style="font-size:22px;font-weight:800;letter-spacing:.05em">'+esc(R._placa)+'</p>'+(ok?'<div class="status ok">Enviado para o escritório.</div>':'<div class="status pend">Guardado no celular. Sem internet agora: vai enviar sozinho quando o sinal voltar. Pode fechar o app.</div>')+(R._fim==="saida"?'<div class="card" style="text-align:left"><b>Check-list em aberto.</b><p>Quando voltar das entregas, abra o app e toque no botão amarelo da placa <b>'+esc(R._placa)+'</b> para completar com km, entregas e peso que voltaram.</p></div><p class="mut">Boa viagem!</p>':'')+'</div>';
  $("#rod").innerHTML='<div class="rodape"><div><button class="prox" data-a="inicio">Voltar ao início</button></div></div>';
 }
 
@@ -308,7 +314,8 @@ document.addEventListener("input",e=>{
  const t=e.target;
  if(t.id==="d-cpf"){const p=t.selectionStart===t.value.length;t.value=cpfFmt(t.value);if(p)t.setSelectionRange(t.value.length,t.value.length);return}
  if(!R)return;
- if(t.dataset.k){R[t.dataset.k]=t.dataset.k==="placa"?t.value.toUpperCase():t.value;salvar();return}
+ if(t.dataset.k){R[t.dataset.k]=t.dataset.k==="placa"?t.value.toUpperCase():t.value;salvar();if(t.dataset.k==="km"&&R.tipo==="retorno"){const k=$("#kmrod");if(k)k.outerHTML=kmRodHTML()}return}
+ if(t.dataset.dv){R.divergencia.desc=t.value;salvar();return}
  if(t.dataset.av){R.avarias[+t.dataset.av].desc=t.value;salvar();return}
  if(t.dataset.nok){R.nok[t.dataset.nok]=t.value;salvar();return}
  if(t.dataset.fr){R.frio[t.dataset.fr]=t.value.replace(/^-/,"");if(/^-/.test(t.value)){R.frio.neg=true}const a=$("#aviso-t");if(a)a.outerHTML=avisoTemp();salvar();return}
@@ -352,6 +359,7 @@ document.addEventListener("click",async e=>{
   case"rm-av":R.avarias.splice(+b.dataset.i,1);salvar();{const y=scrollY;render();scrollTo(0,y)}return;
   case"item":{const n=b.dataset.n;if(n in R.nok)delete R.nok[n];else R.nok[n]="";salvar();const y=scrollY;render();scrollTo(0,y);if(n in R.nok){const i=document.querySelector('[data-nok="'+CSS.escape(n)+'"]');if(i)i.focus({preventScroll:true})}return}
   case"frio":R.frio.usa=b.dataset.v;salvar();if(R.tipo==="saida"&&b.dataset.v==="nao"){render()}else render();return;
+  case"diverg":R.divergencia.houve=b.dataset.v==="1";salvar();{const y=scrollY;render();scrollTo(0,y);if(R.divergencia.houve){const t=$("#c-div");if(t)t.focus({preventScroll:true})}}return;
   case"aparelho":R.frio.aparelho=b.dataset.v;salvar();{const y=scrollY;render();scrollTo(0,y)}return;
   case"sinal":R.frio[b.dataset.k]=b.dataset.v==="1";salvar();{const y=scrollY;render();scrollTo(0,y)}return;
   case"limpar-ass":{const c=$("#ass");c.getContext("2d").clearRect(0,0,c.width,c.height);R.assinatura="";salvar();return}
@@ -398,13 +406,13 @@ async function admCarregar(){
  if(tela==="adm-lista")admLista();
 }
 const situ=l=>({"Em rota":"t-rota","Aguardando validação":"t-aguard","Validado":"t-val","Reprovado":"t-rep"})[l.situacao]||"t-sem";
-const temProblema=l=>(l.saida&&(Object.keys(l.saida.itensNok||{}).length||(l.saida.avarias||[]).length||(l.saida.frio&&(l.saida.frio.aparelho==="nok"||l.saida.frio.fora))))||(l.retorno&&((l.retorno.avarias||[]).length||(l.retorno.frio&&(l.retorno.frio.aparelho==="nok"||l.retorno.frio.fora))));
-function admFiltrados(){const q=filtroAdm.q.trim().toLowerCase();return(admDados.linhas||[]).filter(l=>{if(filtroAdm.st==="prob"){if(!temProblema(l))return false}else if(filtroAdm.st&&l.situacao!==filtroAdm.st)return false;if(q&&![l.placa,l.motorista,l.cpf,l.ajudante,l.ajudante2].join(" ").toLowerCase().includes(q))return false;return true})}
+const temProblema=l=>(l.retorno&&l.retorno.divergencia&&l.retorno.divergencia.houve)||(l.saida&&(Object.keys(l.saida.itensNok||{}).length||(l.saida.avarias||[]).length||(l.saida.frio&&(l.saida.frio.aparelho==="nok"||l.saida.frio.fora))))||(l.retorno&&((l.retorno.avarias||[]).length||(l.retorno.frio&&(l.retorno.frio.aparelho==="nok"||l.retorno.frio.fora))));
+function admFiltrados(){const q=filtroAdm.q.trim().toLowerCase();return(admDados.linhas||[]).filter(l=>{if(filtroAdm.st==="prob"){if(!temProblema(l))return false}else if(filtroAdm.st&&l.situacao!==filtroAdm.st)return false;if(q&&![l.placa,l.motorista,l.cpf,l.ajudante].join(" ").toLowerCase().includes(q))return false;return true})}
 function admLista(){
  if(!admDados)return admCarregar();
  const L=admDados.linhas||[],cnt=s=>L.filter(l=>l.situacao===s).length,prob=L.filter(temProblema).length;
  let h='<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap"><h1 style="margin:0">Check-lists</h1><span class="mut">'+esc(adm.nome)+' · '+(adm.papel==="adm"?"Administrativo":"Diretoria")+' · <button class="link" data-a="adm-sair">Sair</button></span></div>';
- h+='<div class="kpis"><div class="kpi"><b>'+cnt("Em rota")+'</b><span>Em rota</span></div><div class="kpi"><b>'+cnt("Aguardando validação")+'</b><span>Aguardando validação</span></div><div class="kpi'+(prob?" vm":"")+'"><b>'+prob+'</b><span>Com problema (NOK, avaria, frio)</span></div><div class="kpi"><b>'+L.length+'</b><span>No período</span></div></div>';
+ h+='<div class="kpis"><div class="kpi"><b>'+cnt("Em rota")+'</b><span>Em rota</span></div><div class="kpi"><b>'+cnt("Aguardando validação")+'</b><span>Aguardando validação</span></div><div class="kpi'+(prob?" vm":"")+'"><b>'+prob+'</b><span>Com problema (NOK, avaria, frio, divergência)</span></div><div class="kpi"><b>'+L.length+'</b><span>No período</span></div></div>';
  h+='<div class="filtros"><input id="fa-q" placeholder="Buscar placa, motorista, CPF, ajudante" value="'+esc(filtroAdm.q)+'"><select id="fa-st"><option value="">Todas as situações</option><option>Em rota</option><option>Aguardando validação</option><option>Validado</option><option>Reprovado</option><option value="prob">Com problema</option><option>Retorno sem saída</option></select><input type="date" id="fa-de" value="'+esc(filtroAdm.de||admDados._de)+'" aria-label="De"><input type="date" id="fa-ate" value="'+esc(filtroAdm.ate)+'" aria-label="Até"></div>';
  h+='<div style="display:flex;gap:10px;flex-wrap:wrap;margin:10px 0"><button data-a="adm-atualizar">Atualizar</button>'+(admDados.planilha&&/^https:\/\/docs\.google\.com\//.test(admDados.planilha)?'<a class="link" style="display:flex;align-items:center" href="'+esc(admDados.planilha)+'" target="_blank" rel="noopener">Abrir planilha no Google</a>':'')+'</div><div id="lista-adm"></div>';
  $("#app").innerHTML=h;$("#fa-st").value=filtroAdm.st;admListaItens();
@@ -424,9 +432,9 @@ function admDetalhe(){
  const l=(admDados&&admDados.linhas||[]).find(x=>x.id===admSel);if(!l){tela="adm-lista";return render()}
  const s=l.saida||{},r=l.retorno||null,nk=Object.entries(s.itensNok||{});
  let h='<button class="link" data-a="adm-voltar">← Voltar à lista</button><div style="display:flex;justify-content:space-between;gap:8px;align-items:center"><h1 style="margin:0;letter-spacing:.04em">'+esc(l.placa)+'</h1><span class="tag '+situ(l)+'">'+esc(l.situacao)+'</span></div>';
- h+='<div class="card"><h2 style="margin-top:0">Saída · '+esc(br(l.dataSaida))+' '+esc(l.horaSaida||"")+'</h2><dl><dt>Motorista</dt><dd>'+esc(l.motorista)+'</dd><dt>CPF</dt><dd>'+esc(cpfFmt(l.cpf))+'</dd><dt>Ajudante</dt><dd>'+(esc(l.ajudante)||"Sem ajudante")+(l.ajudante2?", "+esc(l.ajudante2):"")+'</dd><dt>Km</dt><dd>'+esc(s.km??"")+'</dd>'+(s.transporte?'<dt>Transporte</dt><dd>'+esc(s.transporte)+'</dd>':'')+(s.lacre?'<dt>Lacre</dt><dd>'+esc(s.lacre)+'</dd>':'')+(s.clientes!=null?'<dt>Clientes</dt><dd>'+esc(s.clientes)+'</dd>':'')+(s.peso?'<dt>Peso</dt><dd>'+esc(s.peso)+'</dd>':'')+
+ h+='<div class="card"><h2 style="margin-top:0">Saída · '+esc(br(l.dataSaida))+' '+esc(l.horaSaida||"")+'</h2><dl><dt>Motorista</dt><dd>'+esc(l.motorista)+'</dd><dt>CPF</dt><dd>'+esc(cpfFmt(l.cpf))+'</dd><dt>Ajudante</dt><dd>'+(esc(l.ajudante)||"Sem ajudante")+'</dd><dt>Km</dt><dd>'+esc(s.km??"")+'</dd>'+(s.transporte?'<dt>Transporte</dt><dd>'+esc(s.transporte)+'</dd>':'')+(s.lacre?'<dt>Lacre</dt><dd>'+esc(s.lacre)+'</dd>':'')+(s.clientes!=null?'<dt>Clientes</dt><dd>'+esc(s.clientes)+'</dd>':'')+(s.peso?'<dt>Peso</dt><dd>'+esc(s.peso)+'</dd>':'')+
  '<dt>Itens</dt><dd style="color:'+(nk.length?"var(--verm)":"var(--verde)")+'">'+(nk.length?nk.map(([k,v])=>esc(k)+": "+esc(v)).join("<br>"):"Todos OK")+'</dd><dt>Frio</dt><dd style="color:'+(s.frio&&(s.frio.fora||s.frio.aparelho==="nok")?"var(--verm)":"inherit")+'">'+esc(frioTxt(s.frio))+'</dd>'+(s.obs?'<dt>Obs.</dt><dd>'+esc(s.obs)+'</dd>':'')+(s.gps?'<dt>Local</dt><dd><a href="https://www.google.com/maps?q='+(+s.gps[0])+','+(+s.gps[1])+'" target="_blank" rel="noopener">Ver no mapa</a></dd>':'')+'</dl>'+blocoFotos(s.fotosIds,s.avariasIds)+'</div>';
- if(r)h+='<div class="card"><h2 style="margin-top:0">Retorno · '+esc(br(l.dataRetorno))+' '+esc(l.horaRetorno||"")+'</h2><dl><dt>Km chegada</dt><dd>'+esc(r.km??"")+'</dd><dt>Km rodado</dt><dd>'+esc(l.kmRodado??"—")+'</dd>'+(r.clientesRet!=null?'<dt>Clientes ret.</dt><dd>'+esc(r.clientesRet)+'</dd>':'')+(r.pesoRet?'<dt>Peso ret.</dt><dd>'+esc(r.pesoRet)+'</dd>':'')+(r.frio?'<dt>Frio</dt><dd style="color:'+(r.frio.fora||r.frio.aparelho==="nok"?"var(--verm)":"inherit")+'">'+esc(frioTxt(r.frio))+'</dd>':'')+(r.obs?'<dt>Obs.</dt><dd>'+esc(r.obs)+'</dd>':'')+'</dl>'+blocoFotos(r.fotosIds,r.avariasIds,r.assinaturaId)+'</div>';
+ if(r)h+='<div class="card"><h2 style="margin-top:0">Retorno · '+esc(br(l.dataRetorno))+' '+esc(l.horaRetorno||"")+'</h2><dl><dt>Km chegada</dt><dd>'+esc(r.km??"")+'</dd><dt>Km rodado</dt><dd>'+esc(l.kmRodado??"—")+'</dd>'+'<dt>Entregas que voltaram</dt><dd>'+esc(r.clientesRet??"—")+(s.clientes!=null?" de "+esc(s.clientes):"")+'</dd><dt>Peso que voltou</dt><dd>'+esc(r.pesoRet||"0")+' kg</dd><dt>Divergência</dt><dd style="color:'+(r.divergencia&&r.divergencia.houve?"var(--verm)":"inherit")+'">'+(r.divergencia&&r.divergencia.houve?esc(r.divergencia.desc||"Sim"):"Não")+'</dd>'+(r.frio?'<dt>Frio</dt><dd style="color:'+(r.frio.fora||r.frio.aparelho==="nok"?"var(--verm)":"inherit")+'">'+esc(frioTxt(r.frio))+'</dd>':'')+(r.obs?'<dt>Obs.</dt><dd>'+esc(r.obs)+'</dd>':'')+'</dl>'+blocoFotos(r.fotosIds,r.avariasIds,r.assinaturaId)+'</div>';
  else h+='<div class="status pend">Caminhão ainda não voltou (sem retorno registrado).</div>';
  const v=l.validacao||{};
  if(v.situacao)h+='<div class="card"><b>'+esc(v.situacao)+'</b> por '+esc(v.por)+' em '+esc(v.em)+(v.comentario?'<p>'+esc(v.comentario)+'</p>':'')+'</div>';

@@ -10,10 +10,10 @@ const CODIGO_EMPRESA = "KP-7Q4M-2026"; // igual ao CODIGO do arquivo config.js d
 
 const ABA = "Checklists";
 const FUSO = "America/Sao_Paulo";
-const COLS = ["ID", "Situação", "Data saída", "Hora saída", "Placa", "Motorista", "CPF", "Ajudante", "Ajudante 2",
-  "Km saída", "Nº transporte", "Lacre", "Qtd. clientes", "Peso carga", "Itens com problema (NOK)",
+const COLS = ["ID", "Situação", "Data saída", "Hora saída", "Placa", "Motorista", "CPF", "Ajudante",
+  "Km saída", "Nº transporte", "Lacre", "Qtd. entregas", "Peso carga", "Itens com problema (NOK)",
   "Baú refrigerado", "Temp. exigida", "Temp. saída", "Aparelho frio saída", "Avarias saída", "Obs. saída",
-  "Data retorno", "Hora retorno", "Km chegada", "Km rodado", "Clientes retornados", "Peso retornado",
+  "Data retorno", "Hora retorno", "Km chegada", "Km rodado", "Entregas que voltaram", "Peso que voltou", "Divergência na rota",
   "Temp. retorno", "Aparelho frio retorno", "Avarias retorno", "Obs. retorno", "Pasta de fotos",
   "Validado por", "Validado em", "Comentário validação", "Recebido em", "dados_saida", "dados_retorno"];
 const c = nome => COLS.indexOf(nome) + 1;
@@ -50,6 +50,8 @@ function configurar() {
       .setRanges([tudo("Itens com problema (NOK)"), tudo("Avarias saída"), tudo("Avarias retorno")]).build(),
     R().whenTextEqualTo("COM PROBLEMA").setBackground("#e6261f").setFontColor("#ffffff")
       .setRanges([tudo("Aparelho frio saída"), tudo("Aparelho frio retorno")]).build(),
+    R().whenTextStartsWith("Sim").setBackground("#fdecea").setFontColor("#c0150e").setBold(true)
+      .setRanges([tudo("Divergência na rota")]).build(),
     R().whenTextContains("FORA").setBackground("#fdecea").setFontColor("#c0150e").setBold(true)
       .setRanges([tudo("Temp. saída"), tudo("Temp. retorno")]).build()
   ]);
@@ -168,8 +170,8 @@ function receber(r) {
       const put = (k, v) => { L[c(k) - 1] = v; };
       put("ID", r.id); put("Situação", "Em rota"); put("Data saída", dataDe(r.data)); put("Hora saída", txt(r.hora, 5));
       put("Placa", r.placa); put("Motorista", txt(r.motorista && r.motorista.nome, 80)); put("CPF", txt(r.motorista && r.motorista.cpf, 14));
-      put("Ajudante", txt(r.ajudante, 80)); put("Ajudante 2", txt(r.ajudante2, 80)); put("Km saída", numero(r.km));
-      put("Nº transporte", txt(r.transporte, 40)); put("Lacre", txt(r.lacre, 40)); put("Qtd. clientes", numero(r.clientes)); put("Peso carga", txt(r.peso, 20));
+      put("Ajudante", txt(r.ajudante, 80)); put("Km saída", numero(r.km));
+      put("Nº transporte", txt(r.transporte, 40)); put("Lacre", txt(r.lacre, 40)); put("Qtd. entregas", numero(r.clientes)); put("Peso carga", txt(r.peso, 20));
       put("Itens com problema (NOK)", txt(Object.keys(nok).map(k => k + ": " + nok[k]).join("; "), 2000));
       put("Baú refrigerado", fr ? "Sim" : "Não"); put("Temp. exigida", txt(faixaTxt(fr))); put("Temp. saída", txt(tempTxt(fr)));
       put("Aparelho frio saída", fr ? (fr.aparelho === "nok" ? "COM PROBLEMA" : "OK") : "");
@@ -192,7 +194,8 @@ function receber(r) {
   const f = salvarFotos(pasta, r, "retorno");
   const fr = r.frio;
   if (fr && saida.frio) { fr.exigMin = saida.frio.exigMin; fr.exigMax = saida.frio.exigMax; }
-  const dados = { km: r.km, clientesRet: r.clientesRet, pesoRet: r.pesoRet, obs: r.obs,
+  const dv = r.divergencia || {};
+  const dados = { km: r.km, clientesRet: r.clientesRet, pesoRet: r.pesoRet, divergencia: { houve: !!dv.houve, desc: limpo(dv.desc, 1000) }, obs: r.obs,
     frio: fr ? { temp: fr.temp, aparelho: fr.aparelho, exigMin: fr.exigMin, exigMax: fr.exigMax, fora: fora(fr.temp, fr) } : null,
     fotosIds: f.ids, avariasIds: f.av, assinaturaId: f.ass, motorista: r.motorista, criadoEm: r.criadoEm };
   const lock = LockService.getScriptLock(); lock.waitLock(30000);
@@ -209,7 +212,8 @@ function receber(r) {
     const kmS = Number(sh.getRange(n, c("Km saída")).getValue());
     const vals = {
       "Data retorno": dataDe(r.data), "Hora retorno": "'" + String(r.hora || "").slice(0, 5), "Km chegada": numero(r.km),
-      "Km rodado": (r.km != null && kmS && r.km >= kmS) ? r.km - kmS : "", "Clientes retornados": numero(r.clientesRet), "Peso retornado": txt(r.pesoRet, 20),
+      "Km rodado": (r.km != null && kmS && r.km >= kmS) ? r.km - kmS : "", "Entregas que voltaram": numero(r.clientesRet), "Peso que voltou": txt(r.pesoRet, 20),
+      "Divergência na rota": dv.houve ? txt("Sim: " + (dv.desc || ""), 1000) : "Não",
       "Temp. retorno": txt(tempTxt(fr)), "Aparelho frio retorno": fr ? (fr.aparelho === "nok" ? "COM PROBLEMA" : "OK") : "",
       "Avarias retorno": txt(f.av.map((a, i) => (i + 1) + ". " + a.desc).join("; "), 2000), "Obs. retorno": txt(r.obs, 2000),
       "dados_retorno": JSON.stringify(dados)
@@ -254,7 +258,7 @@ function listar(q) {
       try { s = g("dados_saida") ? JSON.parse(g("dados_saida")) : null; } catch (e) { }
       try { r = g("dados_retorno") ? JSON.parse(g("dados_retorno")) : null; } catch (e) { }
       out.push({ id: String(g("ID")), situacao: g("Situação"), dataSaida: iso(g("Data saída")), horaSaida: horaTxt(g("Hora saída")),
-        placa: String(g("Placa")), motorista: String(g("Motorista")), cpf: String(g("CPF")), ajudante: String(g("Ajudante")), ajudante2: String(g("Ajudante 2")),
+        placa: String(g("Placa")), motorista: String(g("Motorista")), cpf: String(g("CPF")), ajudante: String(g("Ajudante")),
         dataRetorno: iso(g("Data retorno")), horaRetorno: horaTxt(g("Hora retorno")), kmRodado: g("Km rodado"), pasta: String(g("Pasta de fotos")),
         saida: s, retorno: r,
         validacao: g("Validado por") ? { situacao: g("Situação"), por: String(g("Validado por")), em: g("Validado em") instanceof Date ? Utilities.formatDate(g("Validado em"), FUSO, "dd/MM/yyyy HH:mm") : String(g("Validado em")), comentario: String(g("Comentário validação")) } : null });
