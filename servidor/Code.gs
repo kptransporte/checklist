@@ -1,14 +1,17 @@
 /**
- * KP CHECKLIST — servidor (Google Apps Script)
+ * KP CHECKLIST — servidor (Google Apps Script) — versão 2
  * Recebe os check-lists do app, grava na planilha e guarda as fotos no Drive.
  *
- * ANTES DE USAR: troque as duas senhas abaixo, salve e rode a função "configurar" uma vez.
+ * ANTES DE USAR: troque a senha do Dev abaixo, salve e rode a função "configurar".
+ * As outras pessoas (Administrativo e Diretoria) o Dev cadastra pelo próprio app.
  */
-const SENHA_ADMINISTRATIVO = "TROQUE-esta-senha-ADM";
-const SENHA_DIRETORIA = "TROQUE-esta-senha-DIR";
+const NOME_DEV = "Patrick";
+const SENHA_DEV_INICIAL = "TROQUE-senha-do-Dev";
 const CODIGO_EMPRESA = "KP-7Q4M-2026"; // igual ao CODIGO do arquivo config.js do app
 
-const ABA = "Checklists";
+const ABA = "Checklists", ABA_USU = "Usuários", ABA_REG = "Registro de acessos", ABA_LIX = "Lixeira";
+const PERFIS = { dev: "Dev", adm: "Administrativo", dir: "Diretoria" };
+const USU_COLS = ["ID", "Nome", "Perfil", "Ativo", "Criado em", "Criado por", "Último acesso", "Senha alterada em", "hash", "sal"];
 const FUSO = "America/Sao_Paulo";
 const COLS = ["ID", "Situação", "Data saída", "Hora saída", "Placa", "Motorista", "CPF", "Ajudante",
   "Km saída", "Nº transporte", "Lacre", "Qtd. entregas", "Peso carga", "Itens com problema (NOK)",
@@ -62,7 +65,22 @@ function configurar() {
   }
   if (!P.getProperty("SEGREDO")) P.setProperty("SEGREDO", Utilities.getUuid() + Utilities.getUuid());
   P.setProperty("PLANILHA_ID", ss.getId());
-  Logger.log("Pronto! Agora publique: Implantar > Nova implantação > App da Web.");
+  // abas novas (v2)
+  const cab = (nome, cols, cor) => {
+    let x = ss.getSheetByName(nome); if (!x) x = ss.insertSheet(nome);
+    x.getRange(1, 1, 1, cols.length).setValues([cols]).setFontWeight("bold").setBackground(cor).setFontColor("#ffffff");
+    x.setFrozenRows(1); return x;
+  };
+  const usu = cab(ABA_USU, USU_COLS, "#111418");
+  usu.hideColumns(9, 2); usu.getRange(2, 1, usu.getMaxRows() - 1, 1).setNumberFormat("@");
+  cab(ABA_REG, ["Data e hora", "Nome", "Perfil", "Ação", "Detalhe"], "#5b6370").getRange("A:A").setNumberFormat("dd/mm/yyyy hh:mm:ss");
+  const lix = cab(ABA_LIX, COLS.concat(["Apagado por", "Apagado em", "Motivo"]), "#e6261f");
+  lix.hideColumns(c("dados_saida"), 2);
+  if (!lerUsuarios().some(u => u.perfil === "dev")) {
+    if (/^TROQUE/.test(SENHA_DEV_INICIAL) || SENHA_DEV_INICIAL.length < 6) throw new Error("Troque a SENHA_DEV_INICIAL (linha 8) por uma senha de pelo menos 6 caracteres, salve e rode de novo.");
+    novoUsuario(NOME_DEV, "dev", SENHA_DEV_INICIAL, "configuração");
+  }
+  Logger.log("Pronto! Planilha configurada. Se o app já estava publicado: Implantar > Gerenciar implantações > editar > Nova versão.");
 }
 
 /* ---------- entrada ---------- */
@@ -79,6 +97,12 @@ function doPost(e) {
       case "listar": return json(listar(q));
       case "foto": return json(foto(q));
       case "validar": return json(validar(q));
+      case "apagar": return json(apagar(q));
+      case "usuarios": return json(usuarios(q));
+      case "usuario_salvar": return json(usuarioSalvar(q));
+      case "registro": return json(registro(q));
+      case "minha_senha": return json(minhaSenha(q));
+      case "sair": { const u = verificar(q.token); registrar(u.n, PERFIS[u.p], "Saiu", ""); return json({ ok: true }); }
     }
     return json({ ok: false, erro: "acao" });
   } catch (err) {
@@ -223,25 +247,112 @@ function receber(r) {
   return { ok: true };
 }
 
-/* ---------- administrativo ---------- */
+/* ---------- usuários e acessos ---------- */
+function ss_() { return SpreadsheetApp.openById(props().getProperty("PLANILHA_ID")); }
+function usuSheet() { return ss_().getSheetByName(ABA_USU); }
+function codPerfil(t) { for (const k in PERFIS) if (PERFIS[k] === t) return k; return ""; }
+function norm(s) { return String(s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").trim().toLowerCase().replace(/\s+/g, " "); }
+function hashSenha(senha, sal) {
+  return Utilities.base64Encode(Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, sal + "|" + senha, Utilities.Charset.UTF_8));
+}
+function lerUsuarios() {
+  const sh = usuSheet(); if (!sh) return [];
+  const n = sh.getLastRow() - 1; if (n < 1) return [];
+  return sh.getRange(2, 1, n, USU_COLS.length).getValues().map((v, i) => ({
+    linha: i + 2, id: String(v[0]), nome: String(v[1]), perfil: codPerfil(v[2]), ativo: v[3] === "Sim",
+    criado: v[4], ultimo: v[6], senhaEm: v[7] instanceof Date ? v[7].getTime() : 0, hash: String(v[8]), sal: String(v[9])
+  })).filter(u => u.id);
+}
+function novoUsuario(nome, perfil, senha, por) {
+  const sal = Utilities.getUuid(), agora = new Date();
+  usuSheet().appendRow(["'" + Utilities.getUuid().slice(0, 8), txt(nome, 60), PERFIS[perfil], "Sim", agora, txt(por, 60), "", agora, hashSenha(senha, sal), sal]);
+}
+function registrar(nome, perfil, acao, detalhe) {
+  try { ss_().getSheetByName(ABA_REG).appendRow([new Date(), txt(nome, 60), txt(perfil, 30), txt(acao, 60), txt(detalhe, 300)]); } catch (e) { }
+}
 function hmac(s) { return Utilities.base64EncodeWebSafe(Utilities.computeHmacSha256Signature(s, props().getProperty("SEGREDO"))); }
 function assinarToken(o) { const s = Utilities.base64EncodeWebSafe(JSON.stringify(o)); return s + "." + hmac(s); }
 function verificar(t) {
   const p = String(t || "").split(".");
   if (p.length !== 2 || hmac(p[0]) !== p[1]) throw new Error("login");
   const o = JSON.parse(Utilities.newBlob(Utilities.base64DecodeWebSafe(p[0])).getDataAsString());
-  if (!o.exp || o.exp < Date.now()) throw new Error("login");
-  return o;
+  const u = lerUsuarios().find(x => x.id === o.u);
+  if (!u || !u.ativo || !u.perfil || (o.t || 0) < u.senhaEm) throw new Error("login");
+  return { id: u.id, n: u.nome, p: u.perfil, linha: u.linha };
 }
 function login(q) {
-  const nome = limpo(String(q.nome || "").trim(), 60);
-  if (!nome) return { ok: false, erro: "Informe seu nome" };
-  let papel = null;
-  if (q.senha && q.senha === SENHA_ADMINISTRATIVO) papel = "adm";
-  else if (q.senha && q.senha === SENHA_DIRETORIA) papel = "dir";
-  if (!papel || /^TROQUE/.test(q.senha)) { Utilities.sleep(1200); return { ok: false, erro: papel ? "Troque a senha padrão no Code.gs antes de usar" : "Senha incorreta" }; }
-  return { ok: true, token: assinarToken({ p: papel, n: nome, exp: Date.now() + 12 * 3600e3 }), papel, nome };
+  const nome = norm(q.nome), senha = String(q.senha || "");
+  if (!nome || !senha) return { ok: false, erro: "Informe seu nome e sua senha" };
+  const u = lerUsuarios().find(x => norm(x.nome) === nome);
+  if (!u || !u.ativo || hashSenha(senha, u.sal) !== u.hash) {
+    Utilities.sleep(1200); registrar(String(q.nome || "").slice(0, 60), "", "Login recusado", "");
+    return { ok: false, erro: "Nome ou senha incorretos" };
+  }
+  usuSheet().getRange(u.linha, 7).setValue(new Date());
+  registrar(u.nome, PERFIS[u.perfil], "Entrou", String(q.aparelho || "").slice(0, 120));
+  return { ok: true, token: assinarToken({ u: u.id, t: Date.now() }), papel: u.perfil, nome: u.nome };
 }
+function minhaSenha(q) {
+  const u = verificar(q.token), x = lerUsuarios().find(y => y.id === u.id);
+  if (hashSenha(String(q.atual || ""), x.sal) !== x.hash) return { ok: false, erro: "Senha atual incorreta" };
+  if (String(q.nova || "").length < 6) return { ok: false, erro: "A nova senha precisa ter pelo menos 6 caracteres" };
+  trocarSenha(x, q.nova);
+  registrar(u.n, PERFIS[u.p], "Trocou a própria senha", "");
+  return { ok: true, token: assinarToken({ u: u.id, t: Date.now() + 1000 }) };
+}
+function trocarSenha(x, senha) {
+  const sal = Utilities.getUuid(), sh = usuSheet();
+  sh.getRange(x.linha, 8).setValue(new Date());
+  sh.getRange(x.linha, 9, 1, 2).setValues([[hashSenha(String(senha), sal), sal]]);
+}
+function usuarios(q) {
+  const u = verificar(q.token); if (u.p !== "dev") return { ok: false, erro: "Só o Dev gerencia usuários" };
+  const fmt = d => d instanceof Date ? Utilities.formatDate(d, FUSO, "dd/MM/yyyy HH:mm") : "";
+  return { ok: true, usuarios: lerUsuarios().map(x => ({ id: x.id, nome: x.nome, perfil: x.perfil, ativo: x.ativo, ultimo: fmt(x.ultimo), eu: x.id === u.id })) };
+}
+function usuarioSalvar(q) {
+  const u = verificar(q.token); if (u.p !== "dev") return { ok: false, erro: "Só o Dev gerencia usuários" };
+  const L = lerUsuarios(), nome = String(q.nome || "").trim().replace(/\s+/g, " ");
+  const lock = LockService.getScriptLock(); lock.waitLock(20000);
+  try {
+    if (!q.id) {
+      if (nome.length < 3) return { ok: false, erro: "Escreva o nome da pessoa" };
+      if (!PERFIS[q.perfil]) return { ok: false, erro: "Escolha o perfil" };
+      if (String(q.senha || "").length < 6) return { ok: false, erro: "A senha precisa ter pelo menos 6 caracteres" };
+      if (L.some(x => norm(x.nome) === norm(nome))) return { ok: false, erro: "Já existe alguém com esse nome. Use nome e sobrenome." };
+      novoUsuario(nome, q.perfil, q.senha, u.n);
+      registrar(u.n, PERFIS[u.p], "Cadastrou usuário", nome + " (" + PERFIS[q.perfil] + ")");
+      return { ok: true };
+    }
+    const x = L.find(y => y.id === q.id); if (!x) return { ok: false, erro: "Usuário não encontrado" };
+    const sh = usuSheet();
+    if (q.ativo !== undefined) {
+      if (x.id === u.id) return { ok: false, erro: "Você não pode desativar a si mesmo" };
+      sh.getRange(x.linha, 4).setValue(q.ativo ? "Sim" : "Não");
+      registrar(u.n, PERFIS[u.p], q.ativo ? "Reativou usuário" : "Desativou usuário", x.nome);
+    }
+    if (q.perfil && PERFIS[q.perfil] && q.perfil !== x.perfil) {
+      if (x.id === u.id) return { ok: false, erro: "Você não pode mudar o próprio perfil" };
+      sh.getRange(x.linha, 3).setValue(PERFIS[q.perfil]);
+      registrar(u.n, PERFIS[u.p], "Mudou perfil", x.nome + " → " + PERFIS[q.perfil]);
+    }
+    if (q.senha) {
+      if (String(q.senha).length < 6) return { ok: false, erro: "A senha precisa ter pelo menos 6 caracteres" };
+      trocarSenha(x, q.senha);
+      registrar(u.n, PERFIS[u.p], "Definiu nova senha", x.nome);
+    }
+    return { ok: true };
+  } finally { lock.releaseLock(); }
+}
+function registro(q) {
+  const u = verificar(q.token); if (u.p !== "dev") return { ok: false, erro: "Só o Dev vê o registro" };
+  const sh = ss_().getSheetByName(ABA_REG), n = sh.getLastRow() - 1;
+  if (n < 1) return { ok: true, linhas: [] };
+  const k = Math.min(n, 400), V = sh.getRange(sh.getLastRow() - k + 1, 1, k, 5).getValues().reverse();
+  return { ok: true, linhas: V.map(v => [v[0] instanceof Date ? Utilities.formatDate(v[0], FUSO, "dd/MM/yyyy HH:mm") : String(v[0]), String(v[1]), String(v[2]), String(v[3]), String(v[4])]) };
+}
+
+/* ---------- check-lists (escritório) ---------- */
 function listar(q) {
   verificar(q.token);
   const sh = aba(), n = sh.getLastRow() - 1;
@@ -251,6 +362,7 @@ function listar(q) {
     const de = String(q.de || ""), ate = String(q.ate || "");
     for (let i = V.length - 1; i >= 0 && out.length < 1500; i--) {
       const v = V[i], g = k => v[c(k) - 1];
+      if (!g("ID")) continue;
       const ds = iso(g("Data saída")) || iso(g("Data retorno")) || iso(g("Recebido em"));
       if (de && ds && ds < de) continue;
       if (ate && ds && ds > ate) continue;
@@ -264,7 +376,7 @@ function listar(q) {
         validacao: g("Validado por") ? { situacao: g("Situação"), por: String(g("Validado por")), em: g("Validado em") instanceof Date ? Utilities.formatDate(g("Validado em"), FUSO, "dd/MM/yyyy HH:mm") : String(g("Validado em")), comentario: String(g("Comentário validação")) } : null });
     }
   }
-  return { ok: true, linhas: out, planilha: SpreadsheetApp.openById(props().getProperty("PLANILHA_ID")).getUrl() };
+  return { ok: true, linhas: out, planilha: ss_().getUrl() };
 }
 function foto(q) {
   verificar(q.token);
@@ -275,7 +387,7 @@ function foto(q) {
 }
 function validar(q) {
   const u = verificar(q.token);
-  if (u.p !== "adm") return { ok: false, erro: "Só o administrativo pode validar" };
+  if (u.p !== "adm" && u.p !== "dev") return { ok: false, erro: "Só o Administrativo pode validar" };
   if (q.situacao !== "Validado" && q.situacao !== "Reprovado") return { ok: false, erro: "situação" };
   const sh = aba(), n = linhaDoId(sh, q.id);
   if (!n) return { ok: false, erro: "Check-list não encontrado" };
@@ -284,5 +396,24 @@ function validar(q) {
   sh.getRange(n, c("Validado por")).setValue(txt(u.n, 60));
   sh.getRange(n, c("Validado em")).setValue(agora);
   sh.getRange(n, c("Comentário validação")).setValue(txt(q.comentario, 1000));
+  registrar(u.n, PERFIS[u.p], q.situacao === "Validado" ? "Validou check-list" : "Reprovou check-list", sh.getRange(n, c("Placa")).getValue() + " · " + iso(sh.getRange(n, c("Data saída")).getValue()));
   return { ok: true, validacao: { situacao: q.situacao, por: u.n, em: Utilities.formatDate(agora, FUSO, "dd/MM/yyyy HH:mm"), comentario: String(q.comentario || "") } };
+}
+function apagar(q) {
+  const u = verificar(q.token);
+  if (u.p !== "adm" && u.p !== "dev") return { ok: false, erro: "Só o Administrativo e o Dev podem apagar" };
+  const lock = LockService.getScriptLock(); lock.waitLock(30000);
+  try {
+    const sh = aba(), n = linhaDoId(sh, q.id);
+    if (!n) return { ok: false, erro: "Check-list não encontrado (talvez já apagado)" };
+    const v = sh.getRange(n, 1, 1, COLS.length).getValues()[0];
+    ss_().getSheetByName(ABA_LIX).appendRow(v.concat([txt(u.n, 60), new Date(), txt(q.motivo, 300)]));
+    let pastaId = "";
+    try { pastaId = JSON.parse(v[c("dados_saida") - 1] || "{}").pastaId || ""; } catch (e) { }
+    if (!pastaId) { const m = /folders\/([A-Za-z0-9_-]+)/.exec(String(v[c("Pasta de fotos") - 1])); if (m) pastaId = m[1]; }
+    if (pastaId) { try { DriveApp.getFolderById(pastaId).setTrashed(true); } catch (e) { } }
+    sh.deleteRow(n);
+    registrar(u.n, PERFIS[u.p], "Apagou check-list", v[c("Placa") - 1] + " · " + iso(v[c("Data saída") - 1]) + " · " + v[c("Motorista") - 1] + (q.motivo ? " · motivo: " + String(q.motivo).slice(0, 150) : ""));
+    return { ok: true };
+  } finally { lock.releaseLock(); }
 }

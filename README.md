@@ -3,7 +3,11 @@
 Check-list de rota da frota da **KP Transportes Ltda.** App leve para celular Android, que funciona sem internet e envia os dados sozinho quando o sinal volta.
 
 - **Motorista:** abre o link, instala na tela inicial, informa nome e CPF uma vez e faz saída e retorno passo a passo, com fotos.
-- **Administrativo e diretoria:** acessam a "Área do administrativo" (no fim da tela inicial do app ou em `#admin`) com senha. Lá veem tudo, as fotos e validam. Os dados também ficam numa planilha Google.
+- **Escritório:** na tela de entrada, "Sou do escritório". Cada pessoa tem nome e senha próprios, cadastrados pelo Dev no app.
+  - **Dev:** tudo, mais o cadastro de pessoas e o registro de acessos.
+  - **Administrativo:** vê tudo, valida, reprova e apaga (o check-list vai para a aba "Lixeira").
+  - **Diretoria:** vê tudo.
+  - Todo login, validação, exclusão e mudança de usuário fica na aba "Registro de acessos".
 
 ## Como funciona
 
@@ -19,7 +23,7 @@ Celular (app)  --guarda no aparelho-->  fila offline  --quando tem internet-->  
 1. Entre na conta Google da empresa e abra **sheets.new**. Dê o nome **KP CHECKLIST**.
 2. Menu **Extensões → Apps Script**.
 3. Apague o que estiver no editor e cole todo o conteúdo de [`servidor/Code.gs`](servidor/Code.gs).
-4. Nas linhas `SENHA_ADMINISTRATIVO` e `SENHA_DIRETORIA`, troque pelas senhas que vocês quiserem.
+4. Na linha `SENHA_DEV_INICIAL`, troque pela senha do Dev (mínimo 6 caracteres). As outras pessoas o Dev cadastra pelo app.
 5. Clique em **Salvar**. Na barra de cima, escolha a função **configurar** e clique em **Executar**.
    Autorize: *Revisar permissões → sua conta → Avançado → Acessar KP CHECKLIST → Permitir*.
 6. **Implantar → Nova implantação →** engrenagem **→ App da Web**.
