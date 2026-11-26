@@ -36,7 +36,7 @@ Celular (app)  --guarda no aparelho-->  fila offline  --quando tem internet-->  
 
 ### 2. Publicar o app
 O app é publicado pelo GitHub Pages a partir do branch **`gh-pages`** (já ativo).
-Endereço para os motoristas: **https://patricklivia.github.io/KP-checkList/**
+Endereço para os motoristas: **https://kptransporte.github.io/checklist/**
 
 Toda alteração precisa ir para `main` e `gh-pages`.
 
