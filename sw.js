@@ -1,7 +1,7 @@
 /* Service worker do KP CHECKLIST: deixa o app abrir sem internet
    e envia a fila em segundo plano quando o sinal voltar. */
 importScripts("config.js", "sync.js");
-const CACHE = "kp-checklist-v3";
+const CACHE = "kp-checklist-v4";
 const ARQUIVOS = ["./", "index.html", "config.js", "sync.js", "manifest.webmanifest", "icon-192.png", "icon-512.png"];
 
 self.addEventListener("install", e => {

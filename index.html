@@ -131,7 +131,7 @@ function cpfOk(c){c=soDig(c);if(c.length!==11||/^(\d)\1+$/.test(c))return false;
 const cpfFmt=c=>{c=soDig(c).slice(0,11);return c.replace(/^(\d{3})(\d)/,"$1.$2").replace(/^(\d{3})\.(\d{3})(\d)/,"$1.$2.$3").replace(/\.(\d{3})(\d)/,".$1-$2")};
 function toast(t){const e=$("#toast");e.textContent=t;e.classList.add("on");clearTimeout(toast.t);toast.t=setTimeout(()=>e.classList.remove("on"),3500)}
 const temp=(v,neg)=>{const n=num(v);return n==null||neg==null?null:(neg?-Math.abs(n):Math.abs(n))};
-const fora=(t,f)=>{const mi=f.exigMin,ma=f.exigMax;return t!=null&&((mi!=null&&t<mi)||(ma!=null&&t>ma))};
+const fora=(t,f)=>{const mi=num(f.exigMin),ma=num(f.exigMax);return t!=null&&((mi!=null&&t<mi)||(ma!=null&&t>ma))};
 let salvarT;function salvar(ja){clearTimeout(salvarT);const f=()=>{if(R&&R.tipo)return F.salvarRascunho(R).catch(()=>{})};if(ja)return f();salvarT=setTimeout(f,300)}
 addEventListener("pagehide",()=>salvar(true));document.addEventListener("visibilitychange",()=>{if(document.hidden)salvar(true)});
 
@@ -145,7 +145,7 @@ async function atualizarRede(){
 async function enviarFila(manual){
  if(!C.API_URL){if(manual)toast("App ainda não configurado. Avise o administrativo.");return}
  const r=await F.enviarTudo();ultimoEnvio=r;await atualizarRede();
- if(manual){toast(r.pendentes?(r.erro==="rede"?"Sem internet. Vai enviar sozinho quando o sinal voltar.":"Não foi possível enviar ("+r.erro+"). Tente de novo."):"Tudo enviado!")}
+ if(manual){toast(r.pendentes?(r.erro==="rede"?"Sem internet. Vai enviar sozinho quando o sinal voltar.":"O escritório ainda não recebeu ("+r.erro+"). Avise o administrativo."):"Tudo enviado!")}
  if(r.enviados&&tela==="inicio")render();
  if(r.enviados&&tela==="fim"){render()}
 }
@@ -192,9 +192,9 @@ async function telaInicio(){
  if(rasc)h+='<div class="card"><b>Você tem um check-list começado</b><p class="mut">'+(rasc.tipo==="saida"?"Saída":"Retorno")+(rasc.placa?" · "+esc(rasc.placa):"")+'</p><button class="grande" data-a="continuar">Continuar de onde parou</button><button class="link" data-a="descartar">Descartar e começar outro</button></div>';
  abertas.forEach(a=>{h+='<button class="retorno" data-a="retorno" data-id="'+esc(a.id)+'"><span>Check-list em aberto · toque para completar o retorno</span><b>'+esc(a.placa)+'</b><span class="mut" style="color:#333">Saiu em '+esc(br(a.data))+' às '+esc(a.hora)+'</span></button>'});
  h+='<button class="grande" data-a="nova">NOVA SAÍDA</button>';
- h+=pend?'<div class="status pend">'+pend+' check-list(s) guardado(s) no celular. Vai enviar sozinho quando tiver internet.<br><button class="link" data-a="enviar">Enviar agora</button></div>':'<div class="status ok">Tudo enviado para o escritório.</div>';
+ h+=pend?'<div class="status pend">'+pend+' check-list(s) guardado(s) no celular, ainda não chegaram no escritório. O app envia sozinho.'+(ultimoEnvio&&ultimoEnvio.erro&&ultimoEnvio.erro!=="rede"?'<br><small>Aviso do servidor: '+esc(ultimoEnvio.erro)+'</small>':'')+'<br><button class="link" data-a="enviar">Enviar agora</button></div>':'<div class="status ok">Tudo enviado para o escritório.</div>';
  if(instalar)h+='<button class="grande verde" data-a="instalar">Instalar o app neste celular</button>';
- h+='<p style="margin-top:22px"><button class="link" data-a="retorno-outro">Retorno de caminhão que saiu em outro celular</button></p><p><button class="link" style="color:var(--mut)" data-a="admin">Área do administrativo</button></p>';
+ h+='<p style="margin-top:22px"><button class="link" data-a="retorno-outro">Retorno de caminhão que saiu em outro celular</button></p><button class="grande" style="background:#fff;color:var(--azul);border:2px solid var(--azul);margin-top:18px" data-a="admin">Área do administrativo (escritório)</button>';
  $("#app").innerHTML=h;
 }
 function telaDados(){
@@ -205,7 +205,7 @@ function telaDados(){
 function novoRegistro(tipo,base){
  const m=motorista();
  const r={tipo,id:base?base.id:uid(),criadoEm:new Date().toISOString(),data:hoje(),hora:hora(),motorista:{nome:m.nome,cpf:m.cpf},fotos:{},avarias:[],obs:""};
- if(tipo==="saida")Object.assign(r,{placa:"",km:"",ajudante:"",semAjudante:false,transporte:"",lacre:"",clientes:"",peso:"",nok:{},frio:{usa:null,neg:null,t:"",exigMin:"",exigMax:"",aparelho:""}});
+ if(tipo==="saida")Object.assign(r,{placa:"",km:"",ajudante:"",semAjudante:false,transporte:"",lacre:"",clientes:"",peso:"",nok:{},frio:{usa:null,neg:null,t:"",exigMin:null,exigMax:null,aparelho:""}});
  else Object.assign(r,{placa:base?base.placa:"",kmSaida:base?base.km:"",outroCelular:!base,km:"",clientesRet:"",pesoRet:"",divergencia:{houve:null,desc:""},frio:{usa:base&&base.frio?"sim":null,neg:null,t:"",aparelho:"",exigMin:base?base.exigMin:null,exigMax:base?base.exigMax:null},assinatura:""});
  if(tipo==="saida"&&navigator.geolocation)navigator.geolocation.getCurrentPosition(p=>{if(R&&R.id===r.id){R.gps=[+p.coords.latitude.toFixed(5),+p.coords.longitude.toFixed(5)];salvar()}},()=>{},{timeout:15000,maximumAge:120000,enableHighAccuracy:false});
  return r;
@@ -251,12 +251,13 @@ function pItens(){
  ITENS.map(it=>{const nk=it in R.nok;return'<button class="item'+(nk?" nok":"")+'" data-a="item" data-n="'+esc(it)+'"><i>'+(nk?"!":"✓")+'</i>'+esc(it)+'<em>'+(nk?"COM PROBLEMA":"OK")+'</em></button>'+(nk?'<input class="nokdesc" data-nok="'+esc(it)+'" value="'+esc(R.nok[it])+'" placeholder="Qual o problema?">':'')}).join('');
 }
 function tempHTML(rot,kv,kn){const f=R.frio;return'<label>'+rot+'</label><div class="duo"><button class="'+(f[kn]===true?"on azul":"")+'" data-a="sinal" data-k="'+kn+'" data-v="1">Abaixo de zero (−)</button><button class="'+(f[kn]===false?"on azul":"")+'" data-a="sinal" data-k="'+kn+'" data-v="0">Acima de zero (+)</button></div><div class="temp" style="margin-top:8px"><input inputmode="decimal" data-fr="'+kv+'" value="'+esc(f[kv])+'" placeholder="Número no painel" aria-label="Temperatura"><button disabled style="background:none">°C</button></div>'}
-function avisoTemp(){const f=R.frio,t=temp(f.t,f.neg);if(t==null||(f.exigMin==null&&f.exigMax==null))return'<div id="aviso-t"></div>';return'<div id="aviso-t" class="'+(fora(t,f)?"alerta":"bom")+'">'+(fora(t,f)?"FORA da temperatura exigida":"Dentro da temperatura exigida")+'</div>'}
+function avisoTemp(){return'<div id="aviso-t"></div>'}
+function avisoTempAntigo(){const f=R.frio,t=temp(f.t,f.neg);if(t==null||(f.exigMin==null&&f.exigMax==null))return'<div id="aviso-t"></div>';return'<div id="aviso-t" class="'+(fora(t,f)?"alerta":"bom")+'">'+(fora(t,f)?"FORA da temperatura exigida":"Dentro da temperatura exigida")+'</div>'}
 function pFrio(){
  const f=R.frio;
  if(R.tipo==="retorno")return tempHTML("Temperatura no painel agora","t","neg")+avisoTemp()+aparelhoHTML();
  let h='<p class="mut">O caminhão está com baú refrigerado ligado (Thermo King)?</p><div class="duo"><button class="'+(f.usa==="sim"?"on verde":"")+'" data-a="frio" data-v="sim">Sim</button><button class="'+(f.usa==="nao"?"on amarelo":"")+'" data-a="frio" data-v="nao">Não</button></div>';
- if(f.usa==="sim")h+=tempHTML("Temperatura no painel agora","t","neg")+'<details'+(f.exigTxt?" open":"")+'><summary>Temperatura exigida da carga (se souber)</summary><label>Faixa exigida</label><div class="duo" style="grid-template-columns:1fr 1fr"><input inputmode="decimal" data-ex="min" value="'+esc(f.exigMinTxt||"")+'" placeholder="mín. ex.: -20"><input inputmode="decimal" data-ex="max" value="'+esc(f.exigMaxTxt||"")+'" placeholder="máx. ex.: -15"></div><p class="mut">Use o sinal de menos no teclado, se tiver. Ex.: -18</p></details>'+avisoTemp()+aparelhoHTML();
+ if(f.usa==="sim")h+=tempHTML("Temperatura no painel agora","t","neg")+avisoTemp()+aparelhoHTML();
  return h;
 }
 function aparelhoHTML(){const f=R.frio;return'<label>O aparelho está funcionando?</label><div class="duo"><button class="'+(f.aparelho==="ok"?"on verde":"")+'" data-a="aparelho" data-v="ok">Sim</button><button class="'+(f.aparelho==="nok"?"on vermelho":"")+'" data-a="aparelho" data-v="nok">Não</button></div>'}
@@ -304,8 +305,8 @@ async function enviarRegistro(){
  pedirSyncFundo();await enviarFila();if(tela==="fim")render();
 }
 async function telaFim(){
- const pend=await atualizarRede();const ok=!pend;
- $("#app").innerHTML='<div class="ok-grande"><div class="circ" style="background:'+(ok?"var(--verde)":"var(--amar)")+'">'+(ok?"✓":"…")+'</div><h1>'+(R._fim==="saida"?"Saída registrada":"Check-list completo")+'</h1><p style="font-size:22px;font-weight:800;letter-spacing:.05em">'+esc(R._placa)+'</p>'+(ok?'<div class="status ok">Enviado para o escritório.</div>':'<div class="status pend">Guardado no celular. Sem internet agora: vai enviar sozinho quando o sinal voltar. Pode fechar o app.</div>')+(R._fim==="saida"?'<div class="card" style="text-align:left"><b>Check-list em aberto.</b><p>Quando voltar das entregas, abra o app e toque no botão amarelo da placa <b>'+esc(R._placa)+'</b> para completar com km, entregas e peso que voltaram.</p></div><p class="mut">Boa viagem!</p>':'')+'</div>';
+ const pend=await atualizarRede();const ok=!pend;const semRede=!navigator.onLine||!ultimoEnvio||ultimoEnvio.erro==="rede";
+ $("#app").innerHTML='<div class="ok-grande"><div class="circ" style="background:'+(ok?"var(--verde)":"var(--amar)")+'">'+(ok?"✓":"…")+'</div><h1>'+(R._fim==="saida"?"Saída registrada":"Check-list completo")+'</h1><p style="font-size:22px;font-weight:800;letter-spacing:.05em">'+esc(R._placa)+'</p>'+(ok?'<div class="status ok">Enviado para o escritório.</div>':(semRede?'<div class="status pend">Guardado no celular. Sem internet agora: vai enviar sozinho quando o sinal voltar. Pode fechar o app.</div>':'<div class="status pend">Guardado no celular. O escritório ainda não recebeu, mas o app tenta de novo sozinho. Pode fechar o app.</div>'))+(R._fim==="saida"?'<div class="card" style="text-align:left"><b>Check-list em aberto.</b><p>Quando voltar das entregas, abra o app e toque no botão amarelo da placa <b>'+esc(R._placa)+'</b> para completar com km, entregas e peso que voltaram.</p></div><p class="mut">Boa viagem!</p>':'')+'</div>';
  $("#rod").innerHTML='<div class="rodape"><div><button class="prox" data-a="inicio">Voltar ao início</button></div></div>';
 }
 
