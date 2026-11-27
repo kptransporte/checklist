@@ -50,6 +50,7 @@ button:disabled{opacity:.5}
 .contorno{background:rgba(255,255,255,.03);color:var(--tinta);border:2px solid var(--linha);box-shadow:none;text-transform:none}
 .verde{background:var(--verde);color:#04170e}.azul{background:var(--azul);color:#fff}.vermelho{background:var(--verm);color:#fff}.amarelo{background:var(--amar);color:#111}
 .grande.verde{background:var(--verde);color:#04170e;box-shadow:0 8px 22px rgba(31,199,127,.3)}
+.bx-excel{min-height:44px;display:inline-flex;align-items:center;gap:8px;white-space:nowrap}.bx-excel svg{width:20px;height:20px;flex:none}
 .link{background:none;color:#ff6a62;min-height:44px;padding:8px 0;font-weight:700}
 .rodape{position:fixed;left:0;right:0;bottom:0;background:rgba(10,10,12,.94);backdrop-filter:blur(10px);border-top:1px solid var(--linha);padding:10px 16px calc(10px + env(safe-area-inset-bottom));z-index:4}
 .rodape>div{max-width:640px;margin:0 auto;display:flex;gap:10px;width:100%}
@@ -486,7 +487,7 @@ function admLista(){
  const L=admDados.linhas||[],cnt=s=>L.filter(l=>l.situacao===s).length,prob=L.filter(temProblema).length;
  let h='<div class="kpis"><div class="kpi k-rota"><b>'+cnt("Em rota")+'</b><span>Em rota agora</span></div><div class="kpi k-aguard"><b>'+cnt("Aguardando validação")+'</b><span>Aguardando validação</span></div><div class="kpi'+(prob?" k-vm":"")+'"><b>'+prob+'</b><span>Com problema (NOK, avaria, frio, divergência)</span></div><div class="kpi"><b>'+L.length+'</b><span>Check-lists no período</span></div></div>';
  h+='<div class="filtros"><input id="fa-q" placeholder="Buscar placa, motorista, ajudante" value="'+esc(filtroAdm.q)+'"><select id="fa-st"><option value="">Todas as situações</option><option>Em rota</option><option>Aguardando validação</option><option>Validado</option><option>Reprovado</option><option value="prob">Com problema</option><option>Retorno sem saída</option></select><input type="date" id="fa-de" value="'+esc(filtroAdm.de||admDados._de)+'" aria-label="De"><input type="date" id="fa-ate" value="'+esc(filtroAdm.ate)+'" aria-label="Até"></div>';
- h+='<div style="display:flex;gap:14px;flex-wrap:wrap;align-items:center;margin:8px 0"><button data-x="atualizar" style="min-height:44px">Atualizar</button>'+(admDados.planilha&&/^https:\/\/docs\.google\.com\//.test(admDados.planilha)?'<a class="link" href="'+esc(admDados.planilha)+'" target="_blank" rel="noopener">Abrir a planilha no Google</a>':'')+'</div><div id="lista-adm" class="grade"></div>';
+ h+='<div style="display:flex;gap:14px;flex-wrap:wrap;align-items:center;margin:8px 0"><button data-x="atualizar" style="min-height:44px">Atualizar</button><button class="verde bx-excel" data-x="excel">'+IC.baixar+'Baixar Excel</button>'+(pode.dev()&&admDados.planilha&&/^https:\/\/docs\.google\.com\//.test(admDados.planilha)?'<a class="link" href="'+esc(admDados.planilha)+'" target="_blank" rel="noopener">Abrir a planilha no Google</a>':'')+'</div><div id="lista-adm" class="grade"></div>';
  corpo().innerHTML=h;$("#fa-st").value=filtroAdm.st;admListaItens();
 }
 function admListaItens(){
@@ -517,6 +518,53 @@ function admDetalhe(){
  h+='</div></div>';
  corpo().innerHTML=h;
  carregarFotos();
+}
+/* ================= Excel (gerado no aparelho, sem conta Google) ================= */
+function carregarXlsx(){if(self.KPXlsx)return Promise.resolve();return new Promise((ok,no)=>{const sc=document.createElement("script");sc.src="xlsx.js?v="+(C.VERSAO||"");sc.onload=ok;sc.onerror=()=>no(new Error("Não deu para preparar o Excel. Feche e abra o app de novo."));document.head.appendChild(sc)})}
+function dataBr(iso,hr){if(!iso)return"";const[a,m,d]=String(iso).split("-").map(Number);if(!a||!m||!d)return String(iso);const h=String(hr||"").match(/^(\d{1,2}):(\d{2})/);return new Date(a,m-1,d,h?+h[1]:0,h?+h[2]:0)}
+const nb=v=>{const n=num(v);return n==null?(v??""):n};
+async function admExcel(b){
+ if(!admDados){toast("Espere a lista carregar");return}
+ const L=admFiltrados();if(!L.length){toast("Nenhum check-list na lista para baixar");return}
+ if(b){b.disabled=true}toast("Preparando o Excel…");
+ try{
+  await carregarXlsx();
+  const NOK=t=>({v:t,s:"nok"}),OK=t=>({v:t,s:"ok"});
+  const avTxt=a=>(a||[]).map((x,i)=>(i+1)+". "+(x.desc||"sem descrição")).join("\n");
+  const frioAp=f=>!f?"":(f.aparelho==="nok"?NOK("Com problema"):OK("OK"));
+  const exig=f=>f&&(f.exigMin!=null||f.exigMax!=null)?(f.exigMin??"")+" a "+(f.exigMax??"")+" °C":"";
+  const tempC=f=>{if(!f||f.temp==null)return"";return fora(f.temp,f)?NOK(f.temp):f.temp};
+  const cab=[["Situação",20],["Data saída",12],["Hora saída",10],["Placa",11],["Motorista",20],["Ajudante",18],["Km saída",10],["Nº transporte",14],["Lacre",12],["Qtd. entregas",10],["Peso carga (kg)",12],["Itens com problema (NOK)",34],["Baú refrigerado",11],["Temp. exigida",14],["Temp. saída (°C)",11],["Aparelho frio saída",14],["Avarias saída",28],["Obs. saída",28],["Data retorno",12],["Hora retorno",10],["Km chegada",10],["Km rodado",10],["Entregas que voltaram",12],["Peso que voltou (kg)",12],["Divergência na rota",28],["Temp. retorno (°C)",11],["Aparelho frio retorno",14],["Avarias retorno",28],["Obs. retorno",28],["Validado por",16],["Validado em",16],["Comentário validação",28]].concat(ITENS.map(i=>[i,12]));
+  const linhas=[],oc=[],cam={};
+  for(const l of L){
+   const s=l.saida||{},r=l.retorno||null,nk=s.itensNok||{},v=l.validacao||{},dv=(r&&r.divergencia)||{};
+   const sit=l.situacao==="Reprovado"?NOK(l.situacao):l.situacao==="Validado"?OK(l.situacao):l.situacao;
+   const nkTxt=Object.entries(nk).map(([k,x])=>k+(x?": "+x:"")).join("\n");
+   linhas.push([sit,dataBr(l.dataSaida),l.horaSaida||"",l.placa,l.motorista,l.ajudante||"",nb(s.km),s.transporte||"",s.lacre||"",nb(s.clientes),nb(s.peso),nkTxt?NOK(nkTxt):(l.saida?OK("Todos OK"):""),l.saida?(s.frio?"Sim":"Não"):"",exig(s.frio),tempC(s.frio),frioAp(s.frio),(s.avariasIds||[]).length?NOK(avTxt(s.avariasIds)):"",s.obs||"",
+    dataBr(l.dataRetorno),l.horaRetorno||"",r?nb(r.km):"",nb(l.kmRodado),r?nb(r.clientesRet):"",r?nb(r.pesoRet):"",r?(dv.houve?NOK(dv.desc||"Sim"):"Não"):"",r?tempC(r.frio&&Object.assign({exigMin:s.frio&&s.frio.exigMin,exigMax:s.frio&&s.frio.exigMax},r.frio)):"",r?frioAp(r.frio):"",r&&(r.avariasIds||[]).length?NOK(avTxt(r.avariasIds)):"",r&&r.obs||"",
+    v.por||"",v.em||"",v.comentario||""].concat(ITENS.map(i=>!l.saida?"":(i in nk?NOK("NOK"):OK("OK")))));
+   const base=[dataBr(l.dataSaida||l.dataRetorno),l.placa,l.motorista,l.ajudante||""],add=(m,t,d)=>oc.push(base.concat([m,t,d,l.situacao]));
+   Object.entries(nk).forEach(([k,x])=>add("Saída","Item NOK: "+k,x||""));
+   (s.avariasIds||[]).forEach(a=>add("Saída","Avaria",a.desc||""));
+   if(s.frio&&s.frio.aparelho==="nok")add("Saída","Aparelho de frio com problema","");
+   if(s.frio&&s.frio.temp!=null&&fora(s.frio.temp,s.frio))add("Saída","Temperatura fora da faixa",s.frio.temp+" °C (exigida "+exig(s.frio)+")");
+   if(r){(r.avariasIds||[]).forEach(a=>add("Retorno","Avaria",a.desc||""));
+    if(r.frio&&r.frio.aparelho==="nok")add("Retorno","Aparelho de frio com problema","");
+    const fr=r.frio&&Object.assign({exigMin:s.frio&&s.frio.exigMin,exigMax:s.frio&&s.frio.exigMax},r.frio);if(fr&&fr.temp!=null&&fora(fr.temp,fr))add("Retorno","Temperatura fora da faixa",fr.temp+" °C (exigida "+exig(fr)+")");
+    if(dv.houve)add("Retorno","Divergência na rota",dv.desc||"")}
+   const c=cam[l.placa]||(cam[l.placa]={n:0,km:0,prob:0,ult:""});c.n++;const k=num(l.kmRodado);if(k!=null)c.km+=k;if(temProblema(l))c.prob++;const ds=(l.dataSaida||l.dataRetorno||"")+" "+(l.horaSaida||"");if(ds>c.ult)c.ult=ds;
+  }
+  const blob=KPXlsx.gerar([
+   {nome:"Check-lists",colunas:cab.map(([t,w])=>({t,w})),linhas},
+   {nome:"Ocorrências",colunas:[["Data",12],["Placa",11],["Motorista",20],["Ajudante",18],["Momento",10],["Tipo",30],["Descrição",40],["Situação",20]].map(([t,w])=>({t,w})),linhas:oc.map(o=>o.slice(0,7).concat([o[7]==="Reprovado"?NOK(o[7]):o[7]]))},
+   {nome:"Por caminhão",colunas:[["Placa",11],["Check-lists",11],["Km rodado no período",14],["Com problema",12],["Último check-list",14]].map(([t,w])=>({t,w})),linhas:Object.keys(cam).sort().map(p=>{const c=cam[p];return[p,c.n,c.km,c.prob?NOK(c.prob):0,dataBr(c.ult.split(" ")[0],c.ult.split(" ")[1])]})}
+  ]);
+  const de=filtroAdm.de||admDados._de||"",ate=filtroAdm.ate||hoje();
+  const nome="KP_CHECKLIST_"+(de?br(de).replace(/\//g,"-")+"_a_":"ate_")+br(ate).replace(/\//g,"-")+".xlsx";
+  const a=document.createElement("a"),u=URL.createObjectURL(blob);a.href=u;a.download=nome;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),60000);
+  toast("Excel baixado: "+L.length+" check-list"+(L.length>1?"s":""));
+ }catch(e){toast(e.message||"Não deu para gerar o Excel")}
+ finally{if(b)b.disabled=false}
 }
 async function carregarFotos(){
  for(const im of document.querySelectorAll("img[data-fid]")){
@@ -567,6 +615,7 @@ document.addEventListener("click",async e=>{
   case"sair":try{await api("sair")}catch(e){}adm=null;LS.set("kp-adm",null);admDados=null;admUsu=null;tela="adm";return render();
   case"aba":admAba=b.dataset.v;tela="adm";if(admAba==="usuarios")admUsu=null;return render();
   case"atualizar":admDados=null;return admCarregar();
+  case"excel":return admExcel(b);
   case"abrir":admSel=b.dataset.id;confApagar=false;tela="adm-det";return render();
   case"voltar":admSel=null;confApagar=false;tela="adm";return render();
   case"validar":return admValidar(b.dataset.v,b);

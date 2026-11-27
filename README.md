@@ -8,6 +8,7 @@ Check-list de rota da frota da **KP Transportes Ltda.** App leve para celular An
   - **Administrativo:** vê tudo, valida, reprova e apaga (o check-list vai para a aba "Lixeira").
   - **Diretoria:** vê tudo.
   - Todo login, validação, exclusão e mudança de usuário fica na aba "Registro de acessos".
+  - **Baixar Excel:** qualquer pessoa do escritório baixa um .xlsx (abas Check-lists, Ocorrências e Por caminhão) direto pelo app, só com o login dela. O arquivo é montado no próprio aparelho, sem pedir conta Google, e respeita os filtros da tela.
 
 ## Como funciona
 
@@ -55,6 +56,7 @@ Toda alteração precisa ir para `main` e `gh-pages`.
 |---|---|
 | `index.html` | O app inteiro (motorista + administrativo) |
 | `sync.js` | Fila offline (guarda no celular e envia depois) |
+| `xlsx.js` | Gera o arquivo Excel no aparelho |
 | `sw.js` | Faz o app abrir sem internet e enviar em segundo plano |
 | `config.js` | Endereço do servidor Google |
 | `servidor/Code.gs` | Servidor (colar no Apps Script da planilha) |
