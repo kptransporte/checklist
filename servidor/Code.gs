@@ -251,6 +251,23 @@ function receber(r) {
   return { ok: true };
 }
 
+/* ---------- esqueceu a senha do Dev? ----------
+ * Coloque a senha nova na linha SENHA_DEV_INICIAL (lá em cima), salve (Ctrl+S),
+ * escolha "redefinirSenhaDev" na caixinha e clique em Executar.
+ * Só quem tem acesso a este editor consegue fazer isso. Não precisa implantar de novo. */
+function redefinirSenhaDev() {
+  if (/^TROQUE/.test(SENHA_DEV_INICIAL) || SENHA_DEV_INICIAL.length < 6) throw new Error("Coloque a senha nova (mínimo 6 caracteres) na linha SENHA_DEV_INICIAL, salve e rode de novo.");
+  const L = lerUsuarios();
+  let x = L.find(u => norm(u.nome) === norm(NOME_DEV)) || L.find(u => u.perfil === "dev");
+  if (!x) { novoUsuario(NOME_DEV, "dev", SENHA_DEV_INICIAL, "redefinição"); Logger.log("Usuário Dev criado: " + NOME_DEV); return; }
+  const sh = usuSheet();
+  sh.getRange(x.linha, 3).setValue(PERFIS.dev);
+  sh.getRange(x.linha, 4).setValue("Sim");
+  trocarSenha(x, SENHA_DEV_INICIAL);
+  registrar(x.nome, "Dev", "Senha do Dev redefinida pelo editor", "");
+  Logger.log("Pronto! Entre no app com o nome \"" + x.nome + "\" e a senha da linha SENHA_DEV_INICIAL.");
+}
+
 /* ---------- usuários e acessos ---------- */
 function ss_() { return SpreadsheetApp.openById(props().getProperty("PLANILHA_ID")); }
 function usuSheet() { return ss_().getSheetByName(ABA_USU); }
