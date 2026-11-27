@@ -18,7 +18,7 @@ const COLS = ["ID", "Situação", "Data saída", "Hora saída", "Placa", "Motori
   "Baú refrigerado", "Temp. exigida", "Temp. saída", "Aparelho frio saída", "Avarias saída", "Obs. saída",
   "Data retorno", "Hora retorno", "Km chegada", "Km rodado", "Entregas que voltaram", "Peso que voltou", "Divergência na rota",
   "Temp. retorno", "Aparelho frio retorno", "Avarias retorno", "Obs. retorno", "Pasta de fotos",
-  "Validado por", "Validado em", "Comentário validação", "Recebido em", "dados_saida", "dados_retorno"];
+  "Validado por", "Validado em", "Comentário validação", "Recebido em", "dados_saida", "dados_retorno", "Anomalias na carga"];
 const c = nome => COLS.indexOf(nome) + 1;
 
 /* ---------- configuração (rodar uma vez) ---------- */
@@ -53,6 +53,7 @@ function configurar() {
       .setRanges([tudo("Itens com problema (NOK)"), tudo("Avarias saída"), tudo("Avarias retorno")]).build(),
     R().whenTextEqualTo("COM PROBLEMA").setBackground("#e6261f").setFontColor("#ffffff")
       .setRanges([tudo("Aparelho frio saída"), tudo("Aparelho frio retorno")]).build(),
+    R().whenCellNotEmpty().setBackground("#fdecea").setFontColor("#c0150e").setBold(true).setRanges([tudo("Anomalias na carga")]).build(),
     R().whenTextStartsWith("Sim").setBackground("#fdecea").setFontColor("#c0150e").setBold(true)
       .setRanges([tudo("Divergência na rota")]).build(),
     R().whenTextContains("FORA").setBackground("#fdecea").setFontColor("#c0150e").setBold(true)
@@ -168,7 +169,9 @@ function salvarFotos(pasta, r, fase) {
     ids[k] = salvarImagem(pasta, r.fotos[k], pl + "_" + fase + "_" + String(k).replace(/[^a-z]/g, "") + ".jpg");
   });
   (r.avarias || []).slice(0, 20).forEach((a, i) => {
-    av.push({ desc: limpo(a.desc, 200), foto: salvarImagem(pasta, a.foto, pl + "_" + fase + "_avaria" + (i + 1) + ".jpg") });
+    const anom = a.tipo === "anomalia" || /^ANOMALIA NA CARGA:/.test(String(a.desc || ""));
+    const d = limpo(String(a.desc || "").replace(/^ANOMALIA NA CARGA:\s*/, ""), 300);
+    av.push({ desc: anom ? "ANOMALIA NA CARGA: " + d : d, tipo: anom ? "anomalia" : "", foto: salvarImagem(pasta, a.foto, pl + "_" + fase + (anom ? "_anomalia" : "_avaria") + (i + 1) + ".jpg") });
   });
   const ass = r.assinatura ? salvarImagem(pasta, r.assinatura, pl + "_assinatura.png", "image/png") : "";
   return { ids, av, ass };
@@ -239,7 +242,8 @@ function receber(r) {
       "Km rodado": (r.km != null && kmS && r.km >= kmS) ? r.km - kmS : "", "Entregas que voltaram": numero(r.clientesRet), "Peso que voltou": txt(r.pesoRet, 20),
       "Divergência na rota": dv.houve ? txt("Sim: " + (dv.desc || ""), 1000) : "Não",
       "Temp. retorno": txt(tempTxt(fr)), "Aparelho frio retorno": fr ? (fr.aparelho === "nok" ? "COM PROBLEMA" : "OK") : "",
-      "Avarias retorno": txt(f.av.map((a, i) => (i + 1) + ". " + a.desc).join("; "), 2000), "Obs. retorno": txt(r.obs, 2000),
+      "Avarias retorno": txt(f.av.filter(a => !a.tipo).map((a, i) => (i + 1) + ". " + a.desc).join("; "), 2000),
+      "Anomalias na carga": txt(f.av.filter(a => a.tipo).map((a, i) => (i + 1) + ". " + a.desc.replace(/^ANOMALIA NA CARGA:\s*/, "")).join("; "), 2000), "Obs. retorno": txt(r.obs, 2000),
       "dados_retorno": JSON.stringify(dados)
     };
     Object.keys(vals).forEach(k => sh.getRange(n, c(k)).setValue(vals[k]));
